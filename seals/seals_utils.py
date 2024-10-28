@@ -59,7 +59,7 @@ def recompile_cython(env_name):
 
         cython_command = "python compile_cython_functions.py build_ext -i clean"
         if env_name_to_use:
-            cython_command = "conda activate " + env_name_to_use + " && " + cython_command
+            # cython_command = "conda activate " + env_name_to_use + " && " + cython_command
             process = subprocess.Popen(cython_command, shell=True, stdout=subprocess.PIPE)
             output, err = process.communicate()
             if err:
@@ -67,6 +67,7 @@ def recompile_cython(env_name):
 
             # returned = os.system(cython_command)
         else:
+            cython_command = "conda activate " + env_name_to_use + " && " + cython_command
             process = subprocess.Popen(cython_command, shell=True, stdout=subprocess.PIPE)
             output, err = process.communicate()
             if err:
@@ -1435,7 +1436,8 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
     regional_change_classes['region_label'] = regional_change_classes['region_label'].str.upper() 
     
     # Merge regional_change_vector with regional_change_classes
-    merged = pd.merge(regional_change_vector, regional_change_classes, left_on='ee_r264_label', right_on='region_label', how='inner')
+    # merged = pd.merge(regional_change_vector, regional_change_classes, left_on='ee_r264_label', right_on='region_label', how='inner')
+    merged = pd.merge(regional_change_vector, regional_change_classes, left_on='region_label', right_on='region_label', how='inner')
     
     if region_ids_raster_path is None:
         region_ids_raster_path = os.path.join(output_dir, 'region_ids.tif')
@@ -1445,7 +1447,12 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
         
         # TODOO NOTE that here we are not using all_touched. This is a fundamental problem with coarse reclassification. Lots of the polygon will be missed. Ideally, you use all_touched=False for 
         # country-country borders but all_touched=True for country-coastline boarders. Or join with EEZs?
+<<<<<<< HEAD
+        # hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name='ee_r264_id', burn_values=None, datatype=5, ndv=0, all_touched=False)
+        hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name='pyramid_id', burn_values=None, datatype=3, ndv=0, all_touched=False)
+=======
         hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name='ee_r264_id', burn_values=None, datatype=13, ndv=0, all_touched=False)
+>>>>>>> upstream/main
 
     # Get the number of cells per zone. We need to know how big the zone is in terms of coarse cells so we can calculate how much of the total change happens in each coarse gridcell    
     # TODOOO: Think about how I should deal with giving the whole regional_change_vector or if I should have it subset out the line it needs, cause this is a utility function.
@@ -1465,7 +1472,8 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
             hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
         
             for i, change in merged[column].items():
-                zone_id = merged['ee_r264_id'][i]
+                # zone_id = merged['ee_r264_id'][i]
+                zone_id = merged['pyramid_id'][i]
                 n_cells = n_cells_per_zone[zone_id]
                 
                 if n_cells > 0  and change != 0:
