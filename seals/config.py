@@ -1,3 +1,5 @@
+# This is close to being deprecated. I've now got things in CSVs with auto parsing so I'm not sure I need this.
+
 ### config.py stores paths and textual information separate from the seals_initialize_project.py file, which may draw from this.
 
 import os

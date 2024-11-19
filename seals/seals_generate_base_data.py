@@ -88,7 +88,8 @@ def fine_processed_inputs(p):
 
 
 def lulc_clip(p):
-
+    # Clip the fine LULC to the project AOI
+    
     if p.run_this:
 
         # In the event that aoi is not global, we will store aoi_lulc and global_lulc paths. In the global version
@@ -132,6 +133,7 @@ def lulc_clip(p):
 
 
 def lulc_simplifications(p):
+    # Simplify the LULC
     
     if p.run_this:
         
@@ -262,6 +264,8 @@ def generated_kernels(p):
 
 
 def lulc_convolutions(p):
+    # Convolve the lulc_binaries
+    # Might want to promote to base_data to precache this for performance
     # NOTE THAT these follow different readwrite data than the other lulcs.
     # They do not write the convolutions if they exist in the base data
     # even if it's for a non global run. This is because there's

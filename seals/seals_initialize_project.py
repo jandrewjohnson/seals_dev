@@ -10,7 +10,7 @@ import hazelbean as hb
 from hazelbean import cloud_utils
 import pandas as pd
 
-import seals_main
+from seals import seals_main
 import seals_utils
 import seals_generate_base_data
 import seals_process_coarse_timeseries
@@ -131,534 +131,48 @@ def build_task_tree_by_name(p, task_tree_name):
 
     target_function(p)
 
-# def build_simple_allocation_run_task_tree(p):
-#     # This is the default task tree that is run on a new seals installation.
 
-#     ##### Preprocessing #####
-
-#     # Define the project AOI
-#     p.project_aoi_task = p.add_task(project_aoi)
-
-#     # Download the base data (note that it saves to p.base_data_dir and thus doesn't create its own dir)
-#     p.base_data_task = p.add_task(seals_process_coarse_timeseries.download_base_data, creates_dir=False)
-
-
-#     ##### FINE PROCESSED INPUTS #####
-
-#     # Make folder for all generated data.
-#     p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
-
-#     # Generate some simple gaussian kernels for later convolutions
-#     p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-#     # Clip the fine LULC to the project AOI
-#     p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-#     # Simplify the LULC
-#     p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-#     # Convert the simplified LULC into 1 binary presence map for each simplified LUC
-#     p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-#     # Convolve the lulc_binaries # TODOO Precache this for performance
-#     p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-#     # # Write a LOCAL version of the regression starting values based on the new data generated.
-#     # p.local_data_regression_starting_values_task = p.add_task(seals_generate_base_data.local_data_regressors_starting_values)
-
-
-#     ##### COARSE CHANGE #####
-#     # Make folder for all generated data.
-#     p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
-
-#     # Extract coarse change from source
-#     p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
-
-#     # Reclassify coarse source to simplified scheme 
-#     p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
-
-#     # Calculate LUH2_simplified difference from base year
-#     p.coarse_simplified_ha_difference_from_base_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_base_year, parent=p.coarse_change_task, skip_existing=0)
-
-
-#     ##### ALLOCATION #####
-
-#     # Iterate through different scenarios to be allocated.
-#     p.allocations_task = p.add_iterator(seals_main.allocations, run_in_parallel=0, skip_existing=0)
-
-#     # Define the zones overwhich parallel allocation should be run
-#     p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, parent=p.allocations_task, run_in_parallel=p.run_in_parallel, skip_existing=0)
-
-#     # Actually do the allocation
-#     p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
-
-
-
-#     ##### STITCH ZONES #####
-
-#     # Stitch the simplified LULC tiles back together
-#     p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
-
-#     # # Reclassify the stitched simplified to original classification.
-#     # p.stitched_lulc_esa_scenarios_task =  p.add_task(seals_main.stitched_lulc_esa_scenarios)
-
-#     # p.post_run_visualization_task = p.add_task(seals_visualization_tasks.post_run_visualization)
-
-
-def build_allocation_run_task_tree(p):
-    # This is the default task tree that is run on a new seals installation.
-
-    ##### Preprocessing #####
-
-    # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
-
-    # Download the base data (note that it saves to p.base_data_dir and thus doesn't create its own dir)
-    p.base_data_task = p.add_task(seals_process_coarse_timeseries.download_base_data, creates_dir=False)
-
-
-    ##### FINE PROCESSED INPUTS #####
-
-    # Make folder for all generated data.
-    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
-
-    # Generate some simple gaussian kernels for later convolutions
-    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Clip the fine LULC to the project AOI
-    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Simplify the LULC
-    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Convert the simplified LULC into 1 binary presence map for each simplified LUC
-    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Convolve the lulc_binaries # TODOO Precache this for performance
-    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # # Write a LOCAL version of the regression starting values based on the new data generated.
-    # p.local_data_regression_starting_values_task = p.add_task(seals_generate_base_data.local_data_regressors_starting_values)
-
-
-    ##### COARSE CHANGE #####
-    # Make folder for all generated data.
-    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
-
-    # Extract coarse change from source
-    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
-
-    # Reclassify coarse source to simplified scheme 
-    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
-
-    # Calculate LUH2_simplified difference from base year
-    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
-
-
-    ##### ALLOCATION #####
-
-    # Iterate through different scenarios to be allocated.
-    p.allocations_task = p.add_iterator(seals_main.allocations, run_in_parallel=0, skip_existing=0)
-
-    # Define the zones overwhich parallel allocation should be run
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, parent=p.allocations_task, run_in_parallel=p.run_in_parallel, skip_existing=0)
-
-    # Actually do the allocation
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
-
-
-
-    ##### STITCH ZONES #####
-
-    # Stitch the simplified LULC tiles back together
-    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
-
-    # # Reclassify the stitched simplified to original classification.
-    # p.stitched_lulc_esa_scenarios_task =  p.add_task(seals_main.stitched_lulc_esa_scenarios)
-
-    # p.post_run_visualization_task = p.add_task(seals_visualization_tasks.post_run_visualization)
-
-
-def build_visualization_task_tree(p):
-    # This is the default task tree that is run on a new seals installation.
-
-    ##### Preprocessing #####
-
-    # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
-
-    # Download the base data (note that it saves to p.base_data_dir and thus doesn't create its own dir)
-    p.base_data_task = p.add_task(seals_process_coarse_timeseries.download_base_data, creates_dir=False, run=0)
-
-
-    ##### FINE PROCESSED INPUTS #####
-
-    # Make folder for all generated data.
-    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs, run=0)
-
-    # Generate some simple gaussian kernels for later convolutions
-    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False, run=0)
-
-    # Clip the fine LULC to the project AOI
-    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False, run=0)
-
-    # Simplify the LULC
-    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False, run=0)
-
-    # Convert the simplified LULC into 1 binary presence map for each simplified LUC
-    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False, run=0)
-
-    # Convolve the lulc_binaries # TODOO Precache this for performance
-    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False, run=0)
-
-    # # Write a LOCAL version of the regression starting values based on the new data generated.
-    # p.local_data_regression_starting_values_task = p.add_task(seals_generate_base_data.local_data_regressors_starting_values)
-
-
-    ##### COARSE CHANGE #####
-    # Make folder for all generated data.
-    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0, run=1)
-
-    # Extract coarse change from source
-    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, skip_existing=0, run=0)
-
-    # Reclassify coarse source to simplified scheme 
-    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0, run=0)
-
-    # Calculate LUH2_simplified difference from base year
-    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0, run=0)
-
-
-    ##### ALLOCATION #####
-
-    # Iterate through different scenarios to be allocated.
-    p.allocations_task = p.add_iterator(seals_main.allocations, run_in_parallel=0, skip_existing=0, run=0)
-
-    # Define the zones overwhich parallel allocation should be run
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, parent=p.allocations_task, run_in_parallel=p.run_in_parallel, skip_existing=0, run=0)
-
-    # Actually do the allocation
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1, run=0)
-
-
-
-    ##### STITCH ZONES #####
-
-    # Stitch the simplified LULC tiles back together
-    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios, run=0)
-
-    # # Reclassify the stitched simplified to original classification.
-    # p.stitched_lulc_esa_scenarios_task =  p.add_task(seals_main.stitched_lulc_esa_scenarios)
-
-    # p.post_run_visualization_task = p.add_task(seals_visualization_tasks.post_run_visualization)
-
-
-    ##### VIZUALIZE EXISTING DATA #####
-    # Make folder for all visualizations.
-    p.visualization_task = p.add_task(seals_visualization_tasks.visualization, skip_existing=0, run=1)
-
-    # For each class, plot the coarse and fine data
-    p.coarse_change_with_class_change_task = p.add_task(seals_visualization_tasks.coarse_change_with_class_change, parent=p.visualization_task, run=1)
-
-    p.coarse_fine_with_report_task = p.add_task(seals_visualization_tasks.coarse_fine_with_report, parent=p.visualization_task, run=1)
-
-    # For each class, plot the coarse and fine data
-    p.create_full_change_matrices_task = p.add_task(seals_main.full_change_matrices, parent=p.visualization_task, run=1)
-    
-    # For each class, plot the coarse and fine data
-    p.target_zones_matrices_task = p.add_task(seals_main.target_zones_matrices, parent=p.visualization_task, run=1)
-    
-    # For each class, plot the coarse and fine data
-    p.plot_full_change_matrices_pngs_task = p.add_task(seals_visualization_tasks.full_change_matrices_pngs, parent=p.visualization_task, run=1)
-    
-    # For each class, plot the coarse and fine data
-    p.plot_target_zones_matrices_pngs_task = p.add_task(seals_visualization_tasks.target_zones_matrices_pngs, parent=p.visualization_task, run=1)
-
-    # Simple plot of the PNGs.
-    p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task, run=1)
-
-def build_allocation_and_visualization_run_task_tree(p):
-    
-    # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
-
-    # Download the base data (note that it saves to p.base_data_dir and thus doesn't create its own dir)
-    p.base_data_task = p.add_task(seals_process_coarse_timeseries.download_base_data, creates_dir=False)
-
-
-    ##### FINE PROCESSED INPUTS #####
-
-    # Make folder for all generated data.
-    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
-
-    # Generate some simple gaussian kernels for later convolutions
-    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Clip the fine LULC to the project AOI
-    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Simplify the LULC
-    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Convert the simplified LULC into 1 binary presence map for each simplified LUC
-    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Convolve the lulc_binaries # TODOO Precache this for performance
-    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # # Write a LOCAL version of the regression starting values based on the new data generated.
-    # p.local_data_regression_starting_values_task = p.add_task(seals_generate_base_data.local_data_regressors_starting_values)
-
-
-    ##### COARSE CHANGE #####
-    # Make folder for all generated data.
-    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
-
-    # Extract coarse change from source
-    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
-
-    # Reclassify coarse source to simplified scheme 
-    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
-
-    # Calculate LUH2_simplified difference from base year
-    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
-
-
-    ##### ALLOCATION #####
-
-    # Iterate through different scenarios to be allocated.
-    p.allocations_task = p.add_iterator(seals_main.allocations, run_in_parallel=0, skip_existing=0)
-
-    # Define the zones overwhich parallel allocation should be run
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, parent=p.allocations_task, run_in_parallel=p.run_in_parallel, skip_existing=0)
-
-    # Actually do the allocation
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
-
-
-
-    ##### STITCH ZONES #####
-
-    # Stitch the simplified LULC tiles back together
-    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
-
-    # # Reclassify the stitched simplified to original classification.
-    # p.stitched_lulc_esa_scenarios_task =  p.add_task(seals_main.stitched_lulc_esa_scenarios)
-
-    # p.post_run_visualization_task = p.add_task(seals_visualization_tasks.post_run_visualization)
-
-    ##### VIZUALIZE EXISTING DATA #####
-    # Make folder for all visualizations.
-    p.visualization_task = p.add_task(seals_visualization_tasks.visualization, skip_existing=0, run=1)
-
-    # For each class, plot the coarse and fine data
-    p.coarse_change_with_class_change_task = p.add_task(seals_visualization_tasks.coarse_change_with_class_change, parent=p.visualization_task, run=1)
-
-    p.coarse_fine_with_report_task = p.add_task(seals_visualization_tasks.coarse_fine_with_report, parent=p.visualization_task, run=1)
-
-    # For each class, plot the coarse and fine data
-    p.create_full_change_matrices_task = p.add_task(seals_main.full_change_matrices, parent=p.visualization_task, run=1)
-    
-    # For each class, plot the coarse and fine data
-    p.target_zones_matrices_task = p.add_task(seals_main.target_zones_matrices, parent=p.visualization_task, run=1)
-    
-    # For each class, plot the coarse and fine data
-    p.plot_full_change_matrices_pngs_task = p.add_task(seals_visualization_tasks.full_change_matrices_pngs, parent=p.visualization_task, run=1)
-    
-    # For each class, plot the coarse and fine data
-    # p.plot_target_zones_matrices_pngs_task = p.add_task(seals_visualization_tasks.target_zones_matrices_pngs, parent=p.visualization_task, run=1)
-
-    # Simple plot of the PNGs.
-    p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task, run=1)
-
-
-def build_allocation_and_quick_visualization_run_task_tree(p):
-    # This is the old default task tree that is run on a new seals installation.
-
-    ##### Preprocessing #####
-
-    # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
-
-    # Download the base data (note that it saves to p.base_data_dir and thus doesn't create its own dir)
-    p.base_data_task = p.add_task(seals_process_coarse_timeseries.download_base_data, creates_dir=False)
-
-
-    ##### FINE PROCESSED INPUTS #####
-
-    # Make folder for all generated data.
-    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
-
-    # Generate some simple gaussian kernels for later convolutions
-    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Clip the fine LULC to the project AOI
-    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Simplify the LULC
-    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Convert the simplified LULC into 1 binary presence map for each simplified LUC
-    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Convolve the lulc_binaries # TODOO Precache this for performance
-    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # # Write a LOCAL version of the regression starting values based on the new data generated.
-    # p.local_data_regression_starting_values_task = p.add_task(seals_generate_base_data.local_data_regressors_starting_values)
-
-
-    ##### COARSE CHANGE #####
-    # Make folder for all generated data.
-    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
-
-    # Extract coarse change from source
-    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
-
-    # Reclassify coarse source to simplified scheme 
-    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
-
-    # Calculate LUH2_simplified difference from base year
-    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
-
-
-    ##### ALLOCATION #####
-
-    # Iterate through different scenarios to be allocated.
-    p.allocations_task = p.add_iterator(seals_main.allocations, run_in_parallel=0, skip_existing=0)
-
-    # Define the zones overwhich parallel allocation should be run
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, parent=p.allocations_task, run_in_parallel=p.run_in_parallel, skip_existing=0)
-
-    # Actually do the allocation
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
-
-
-
-    ##### STITCH ZONES #####
-
-    # Stitch the simplified LULC tiles back together
-    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
-
-    # # Reclassify the stitched simplified to original classification.
-    # p.stitched_lulc_esa_scenarios_task =  p.add_task(seals_main.stitched_lulc_esa_scenarios)
-
-    # p.post_run_visualization_task = p.add_task(seals_visualization_tasks.post_run_visualization)
-
-    ##### VIZUALIZE EXISTING DATA #####
-    # Make folder for all visualizations.
-    p.visualization_task = p.add_task(seals_visualization_tasks.visualization, skip_existing=0, run=1)
-
-    # For each class, plot the coarse and fine data
-    p.coarse_change_with_class_change_task = p.add_task(seals_visualization_tasks.coarse_change_with_class_change, parent=p.visualization_task, run=0)
-
-    # For each class, plot the coarse and fine data
-    p.create_full_change_matrices_task = p.add_task(seals_main.full_change_matrices, parent=p.visualization_task, run=0)
-    
-    # For each class, plot the coarse and fine data
-    p.target_zones_matrices_task = p.add_task(seals_main.target_zones_matrices, parent=p.visualization_task, run=0)
-    
-    # For each class, plot the coarse and fine data
-    p.plot_full_change_matrices_pngs_task = p.add_task(seals_visualization_tasks.full_change_matrices_pngs, parent=p.visualization_task, run=0)
-    
-    # For each class, plot the coarse and fine data
-    p.plot_target_zones_matrices_pngs_task = p.add_task(seals_visualization_tasks.target_zones_matrices_pngs, parent=p.visualization_task, run=0)
-
-    # Simple plot of the PNGs.
-    p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task, run=1)
- 
-
-
-def build_standard_run_task_tree_BORK(p):
-
-    # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
-
-    # # Download the base data (note that it saves to p.base_data_dir and thus doesn't create its own dir)
-    # p.base_data_task = p.add_task(seals_process_coarse_timeseries.download_base_data, creates_dir=False)
-
-
-    ##### FINE PROCESSED INPUTS #####
-
-    # Make folder for all generated data.
-    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
-
-    # Generate some simple gaussian kernels for later convolutions
-    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Clip the fine LULC to the project AOI
-    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Simplify the LULC
-    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Convert the simplified LULC into 1 binary presence map for each simplified LUC
-    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # Convolve the lulc_binaries # TODOO Precache this for performance
-    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    # # Write a LOCAL version of the regression starting values based on the new data generated.
-    # p.local_data_regression_starting_values_task = p.add_task(seals_generate_base_data.local_data_regressors_starting_values)
-
-
-    ##### COARSE CHANGE #####
-    # Make folder for all generated data.
-    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
-
-    # Extract coarse change from source
-    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
-
-    # Reclassify coarse source to simplified scheme 
-    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
-
-    # Calculate LUH2_simplified difference from base year
-    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
-
-
-    ##### ALLOCATION #####
-
-    # Iterate through different scenarios to be allocated.
-    p.allocations_task = p.add_iterator(seals_main.allocations)
-
-    # Define the zones overwhich parallel allocation should be run
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, parent=p.allocations_task)
-
-    # Actually do the allocation
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
-
-
-
-    ##### STITCH ZONES #####
-
-    # Stitch the simplified LULC tiles back together
-    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
-
-    # # Reclassify the stitched simplified to original classification.
-    # p.stitched_lulc_esa_scenarios_task =  p.add_task(seals_main.stitched_lulc_esa_scenarios)
-
-    # p.post_run_visualization_task = p.add_task(seals_visualization_tasks.post_run_visualization)
-
-    ##### VIZUALIZE EXISTING DATA #####
-    # Make folder for all visualizations.
-    p.visualization_task = p.add_task(seals_visualization_tasks.visualization, skip_existing=0, run=1)
-
-    # For each class, plot the coarse and fine data
-    p.coarse_change_with_class_change_task = p.add_task(seals_visualization_tasks.coarse_change_with_class_change, parent=p.visualization_task, run=0)
-
-    # For each class, plot the coarse and fine data
-    p.plot_full_change_matrices_task = p.add_task(seals_main.full_change_matrices, parent=p.visualization_task, run=0)
-    
-    # For each class, plot the coarse and fine data
-    p.plot_full_change_matrices_task = p.add_task(seals_visualization_tasks.full_change_matrices_pngs, parent=p.visualization_task, run=0)
-
-    # Simple plot of the PNGs.
-    p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task, run=1)
-
-    p.coarse_fine_with_report_task = p.add_task(seals_visualization_tasks.coarse_fine_with_report, parent=p.visualization_task, run=0)
-
-
-def build_standard_run_task_tree(p):
+def build_complete_run_task_tree(p):
+    ## OUT OF DATE, but should be replicated
+    p.project_aoi_task = p.add_task(seals_tasks.project_aoi)
+    p.base_data_task = p.add_task(seals_process_coarse_timeseries.download_base_data, creates_dir=False,                                                         run=1, skip_existing=0)
+    p.regressors_starting_values_task = p.add_task(seals_generate_base_data.regressors_starting_values,                                             run=1, skip_existing=0)
+    p.generated_data_task = p.add_task(seals_generate_base_data.generated_data,                                                                     run=1, skip_existing=0)
+    p.aoi_vector_task = p.add_task(seals_generate_base_data.aoi_vector, parent=p.generated_data_task, creates_dir=False,                            run=1, skip_existing=0)
+    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.generated_data_task, creates_dir=False,                              run=1, skip_existing=0)
+    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.generated_data_task, creates_dir=False,        run=1, skip_existing=0)
+    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.generated_data_task, creates_dir=False,                      run=1, skip_existing=0)
+    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.generated_data_task, creates_dir=False,              run=1, skip_existing=0)
+    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.generated_data_task, creates_dir=False,              run=1, skip_existing=0)
+    p.local_data_regression_starting_values_task = p.add_task(seals_generate_base_data.local_data_regressors_starting_values,                       run=1, skip_existing=0)
+    p.luh2_extraction_task = p.add_task(seals_process_coarse_timeseries.luh2_extraction,                                                                         run=1, skip_existing=0)
+    p.luh2_difference_from_base_year_task = p.add_task(seals_process_coarse_timeseries.luh2_difference_from_base_year,                                           run=1, skip_existing=0)
+    p.luh2_as_simplified_proportion_task = p.add_task(seals_process_coarse_timeseries.luh2_as_simplified_proportion,                                                     run=1, skip_existing=0)
+    p.simplified_difference_from_base_yea_task = p.add_task(seals_process_coarse_timeseries.simplified_difference_from_base_year,                                        run=1, skip_existing=0)
+    p.calibration_generated_inputs_task = p.add_task(seals_main.calibration_generated_inputs,                                                       run=1, skip_existing=0)
+    p.calibration_task = p.add_iterator(seals_main.calibration, run_in_parallel=1,                                                                  run=1, skip_existing=0)
+    p.calibration_prepare_lulc_task = p.add_task(seals_main.calibration_prepare_lulc, parent=p.calibration_task,                                    run=1, skip_existing=0)
+    p.calibration_change_matrix_task = p.add_task(seals_main.calibration_change_matrix, parent=p.calibration_task,                                  run=1, skip_existing=0)
+    p.calibration_zones_task = p.add_task(seals_main.calibration_zones, parent=p.calibration_task,                                                  run=1, skip_existing=0, logging_level=20)
+    p.calibration_plots_task = p.add_task(seals_main.calibration_plots, parent=p.calibration_task,                                                  run=1, skip_existing=0)
+    p.combined_trained_coefficients_task = p.add_task(seals_main.combined_trained_coefficients,                                                     run=1, skip_existing=0)
+    p.allocations_task = p.add_iterator(seals_main.allocations, run_in_parallel=0,                                                                  run=1, skip_existing=0)
+    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, parent=p.allocations_task, run_in_parallel=1,                             run=1, skip_existing=0)
+    p.allocation_change_matrix_task = p.add_task(seals_main.allocation_change_matrix, parent=p.allocation_zones_task,                               run=1, skip_existing=0)
+    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task,                                                           run=1, skip_existing=0)
+    p.allocation_exclusive_task = p.add_task(seals_main.allocation_exclusive, parent=p.allocation_zones_task,                                       run=0, skip_existing=0)
+    p.allocation_from_change_matrix_task = p.add_task(seals_main.allocation_from_change_matrix, parent=p.allocation_zones_task,                     run=0, skip_existing=0)
+    p.change_pngs_task = p.add_task(seals_main.change_pngs, parent=p.allocation_zones_task,                                                         run=0, skip_existing=0)
+    p.change_exclusive_pngs_task = p.add_task(seals_main.change_exclusive_pngs, parent=p.allocation_zones_task,                                     run=0, skip_existing=0)
+    p.change_from_change_matrix_pngs_task = p.add_task(seals_main.change_from_change_matrix_pngs, parent=p.allocation_zones_task,                   run=0, skip_existing=0)
+    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios,                                           run=1, skip_existing=0)
+    p.stitched_lulc_esa_scenarios_task =  p.add_task(seals_main.stitched_lulc_esa_scenarios,                                                        run=1, skip_existing=0)
+
+
+    return p
+
+
+def build_standard_task_tree(p):
 
     # Define the project AOI
     p.project_aoi_task = p.add_task(seals_tasks.project_aoi)
@@ -693,73 +207,12 @@ def build_standard_run_task_tree(p):
     p.visualization_task = p.add_task(seals_visualization_tasks.visualization)
     p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
     
-    
-
-
-def build_complete_run_task_tree(p):
-    ## OUT OF DATE, but should be replicated
-    p.project_aoi_task = p.add_task(project_aoi)
-    p.base_data_task = p.add_task(seals_process_coarse_timeseries.download_base_data, creates_dir=False,                                                         run=1, skip_existing=0)
-    p.regressors_starting_values_task = p.add_task(seals_generate_base_data.regressors_starting_values,                                             run=1, skip_existing=0)
-    p.generated_data_task = p.add_task(seals_generate_base_data.generated_data,                                                                     run=1, skip_existing=0)
-    p.aoi_vector_task = p.add_task(seals_generate_base_data.aoi_vector, parent=p.generated_data_task, creates_dir=False,                            run=1, skip_existing=0)
-    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.generated_data_task, creates_dir=False,                              run=1, skip_existing=0)
-    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.generated_data_task, creates_dir=False,        run=1, skip_existing=0)
-    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.generated_data_task, creates_dir=False,                      run=1, skip_existing=0)
-    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.generated_data_task, creates_dir=False,              run=1, skip_existing=0)
-    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.generated_data_task, creates_dir=False,              run=1, skip_existing=0)
-    p.local_data_regression_starting_values_task = p.add_task(seals_generate_base_data.local_data_regressors_starting_values,                       run=1, skip_existing=0)
-    p.luh2_extraction_task = p.add_task(seals_process_coarse_timeseries.luh2_extraction,                                                                         run=1, skip_existing=0)
-    p.luh2_difference_from_base_year_task = p.add_task(seals_process_coarse_timeseries.luh2_difference_from_base_year,                                           run=1, skip_existing=0)
-    p.luh2_as_simplified_proportion_task = p.add_task(seals_process_coarse_timeseries.luh2_as_simplified_proportion,                                                     run=1, skip_existing=0)
-    p.simplified_difference_from_base_yea_task = p.add_task(seals_process_coarse_timeseries.simplified_difference_from_base_year,                                        run=1, skip_existing=0)
-    p.calibration_generated_inputs_task = p.add_task(seals_main.calibration_generated_inputs,                                                       run=1, skip_existing=0)
-    p.calibration_task = p.add_iterator(seals_main.calibration, run_in_parallel=1,                                                                  run=1, skip_existing=0)
-    p.calibration_prepare_lulc_task = p.add_task(seals_main.calibration_prepare_lulc, parent=p.calibration_task,                                    run=1, skip_existing=0)
-    p.calibration_change_matrix_task = p.add_task(seals_main.calibration_change_matrix, parent=p.calibration_task,                                  run=1, skip_existing=0)
-    p.calibration_zones_task = p.add_task(seals_main.calibration_zones, parent=p.calibration_task,                                                  run=1, skip_existing=0, logging_level=20)
-    p.calibration_plots_task = p.add_task(seals_main.calibration_plots, parent=p.calibration_task,                                                  run=1, skip_existing=0)
-    p.combined_trained_coefficients_task = p.add_task(seals_main.combined_trained_coefficients,                                                     run=1, skip_existing=0)
-    p.allocations_task = p.add_iterator(seals_main.allocations, run_in_parallel=0,                                                                  run=1, skip_existing=0)
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, parent=p.allocations_task, run_in_parallel=1,                             run=1, skip_existing=0)
-    p.allocation_change_matrix_task = p.add_task(seals_main.allocation_change_matrix, parent=p.allocation_zones_task,                               run=1, skip_existing=0)
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task,                                                           run=1, skip_existing=0)
-    p.allocation_exclusive_task = p.add_task(seals_main.allocation_exclusive, parent=p.allocation_zones_task,                                       run=0, skip_existing=0)
-    p.allocation_from_change_matrix_task = p.add_task(seals_main.allocation_from_change_matrix, parent=p.allocation_zones_task,                     run=0, skip_existing=0)
-    p.change_pngs_task = p.add_task(seals_main.change_pngs, parent=p.allocation_zones_task,                                                         run=0, skip_existing=0)
-    p.change_exclusive_pngs_task = p.add_task(seals_main.change_exclusive_pngs, parent=p.allocation_zones_task,                                     run=0, skip_existing=0)
-    p.change_from_change_matrix_pngs_task = p.add_task(seals_main.change_from_change_matrix_pngs, parent=p.allocation_zones_task,                   run=0, skip_existing=0)
-    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios,                                           run=1, skip_existing=0)
-    p.stitched_lulc_esa_scenarios_task =  p.add_task(seals_main.stitched_lulc_esa_scenarios,                                                        run=1, skip_existing=0)
-
-    return p
-
-
-def build_global_carbon_by_scenario_task_tree(p):
-    # Example of a post-run task tree
-    p.project_aoi_task = p.add_task(project_aoi)
-    # NOTE. Because p.stitched_lulc_esa_scenarios_dir is referenced in carbon_comparison, need to call but not run the corresponding task.
-    p.simplified_difference_from_base_year_task =  p.add_task(seals_process_coarse_timeseries.simplified_difference_from_base_year,                 run=0, skip_existing=0)
-    p.stitched_lulc_esa_scenarios_task =  p.add_task(seals_main.stitched_lulc_esa_scenarios,                                                        run=0, skip_existing=0)
-    p.stitched_lulc_simplified_scenarios_task =  p.add_task(seals_main.stitched_lulc_simplified_scenarios,                                          run=0, skip_existing=0)
-    p.global_carbon_by_scenario_task = p.add_task(seals_main.global_carbon_by_scenario,                                                             run=1, skip_existing=0)
-    p.carbon_comparison_task = p.add_task(seals_main.carbon_comparison,                                                                             run=1, skip_existing=0)
-
-
-
-
-def build_iucn_30by30_task_tree(p):
-    
-    # DEPRACATED FOR BUILD_IUCN_TASK_TREE()
+ 
+ 
+def build_custom_coarse_algorithm_task_tree(p):
 
     # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
-    
-    # Process the IUCN-specific data to be used in SEALS
-    p.biodiversity_task = p.add_task(seals_generate_base_data.biodiversity)
-    p.kbas_task = p.add_task(seals_generate_base_data.kba, parent=p.biodiversity_task)
-    p.star_task = p.add_task(seals_generate_base_data.star, parent=p.biodiversity_task)
-    
+    p.project_aoi_task = p.add_task(seals_tasks.project_aoi)
 
     ##### FINE PROCESSED INPUTS #####    
     p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
@@ -776,171 +229,19 @@ def build_iucn_30by30_task_tree(p):
     p.coarse_simplified_ha_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha, parent=p.coarse_change_task, skip_existing=0)
     p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
 
-
-    # IUCN SPECIFIC
-    p.iucn_30by30_scenarios_task = p.add_task(seals_main.iucn_30by30_scenarios)     
-    p.protection_by_aezreg_to_meet_30by30_task = p.add_task(seals_main.protection_by_aezreg_to_meet_30by30, parent=p.iucn_30by30_scenarios_task)
-    p.ag_value_task = p.add_task(seals_main.ag_value, parent=p.iucn_30by30_scenarios_task)
+    ##### CUSTOM COARSE ALGORITHM
     
-
-    # Make a new coarse resolution projection based on a vector
-    p.luh_seals_baseline_adjustment_task = p.add_task(seals_main.luh_seals_baseline_adjustment, parent=p.coarse_change_task)
-    p.coarse_simplified_projected_ha_difference_from_previous_year_task = p.add_task(seals_main.coarse_simplified_projected_ha_difference_from_previous_year)
-    p.vector_projections_to_coarse_raster_task = p.add_task(seals_main.vector_projections_to_coarse_raster)
+    # Example of updating base_data with a promotion???
+    ## Process the IUCN-specific data to be used in SEALS
+    # p.biodiversity_task = p.add_task(seals_generate_base_data.biodiversity)
+    # p.kbas_task = p.add_task(seals_generate_base_data.kba, parent=p.biodiversity_task)
+    # p.star_task = p.add_task(seals_generate_base_data.star, parent=p.biodiversity_task)
     
-
-    ##### ALLOCATION #####
-    p.allocations_task = p.add_iterator(seals_main.allocations)
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task)
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
-
-    ##### STITCH ZONES #####
-    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
-
-    ##### VIZUALIZE EXISTING DATA #####
-    p.visualization_task = p.add_task(seals_visualization_tasks.visualization, skip_existing=0, run=1)
-    p.coarse_change_with_class_change_task = p.add_task(seals_visualization_tasks.coarse_change_with_class_change, parent=p.visualization_task, run=0)
-    p.plot_full_change_matrices_task = p.add_task(seals_main.full_change_matrices, parent=p.visualization_task, run=0)
-    p.plot_full_change_matrices_task = p.add_task(seals_visualization_tasks.full_change_matrices_pngs, parent=p.visualization_task, run=0)
-    p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task, run=1)
-    p.coarse_fine_with_report_task = p.add_task(seals_visualization_tasks.coarse_fine_with_report, parent=p.visualization_task, run=0)
-
-
-def build_iucn_task_tree(p):
-
-    # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
-    
-    # Process the IUCN-specific data to be used in SEALS
-    p.biodiversity_task = p.add_task(seals_generate_base_data.biodiversity)
-    p.kbas_task = p.add_task(seals_generate_base_data.kba, parent=p.biodiversity_task)
-    p.star_task = p.add_task(seals_generate_base_data.star, parent=p.biodiversity_task)
-
-    ##### FINE PROCESSED INPUTS #####    
-    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
-    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    ##### COARSE CHANGE #####
-    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
-    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
-    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
-    p.coarse_simplified_ha_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha, parent=p.coarse_change_task, skip_existing=0)
-    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
-
-    # IUCN SPECIFIC
-    p.iucn_30by30_scenarios_task = p.add_task(seals_main.iucn_30by30_scenarios)     
-    p.protection_by_aezreg_to_meet_30by30_task = p.add_task(seals_main.protection_by_aezreg_to_meet_30by30, parent=p.iucn_30by30_scenarios_task)
-    p.ag_value_task = p.add_task(seals_main.ag_value, parent=p.iucn_30by30_scenarios_task)
-    p.luh_seals_baseline_adjustment_task = p.add_task(seals_main.luh_seals_baseline_adjustment, parent=p.iucn_30by30_scenarios_task)
-    p.coarse_simplified_projected_ha_difference_from_previous_year_task = p.add_task(seals_main.coarse_simplified_projected_ha_difference_from_previous_year, parent=p.iucn_30by30_scenarios_task)
-
-
-    ##### ALLOCATION #####
-    p.allocations_task = p.add_iterator(seals_main.allocations)
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task)
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
-
-    ##### STITCH ZONES #####
-    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
-
-
-
-def build_regional_coarse_fine_allocation_task_tree(p):
-
-    # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
-    
-    # Process the IUCN-specific data to be used in SEALS
-    p.biodiversity_task = p.add_task(seals_generate_base_data.biodiversity)
-    p.kbas_task = p.add_task(seals_generate_base_data.kba, parent=p.biodiversity_task)
-    p.star_task = p.add_task(seals_generate_base_data.star, parent=p.biodiversity_task)
-
-    ##### FINE PROCESSED INPUTS #####    
-    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
-    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    ##### COARSE CHANGE #####
-    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
-    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
-    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
-    p.coarse_simplified_ha_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha, parent=p.coarse_change_task, skip_existing=0)
-    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
-
-    # IUCN SPECIFIC
-    p.restoration_task = p.add_task(seals_main.restoration)     
-    p.protection_by_aezreg_to_meet_30by30_task = p.add_task(seals_main.protection_by_aezreg_to_meet_30by30, parent=p.restoration_task)
-    p.ag_value_task = p.add_task(seals_main.ag_value, parent=p.restoration_task)
-    p.luh_seals_baseline_adjustment_task = p.add_task(seals_main.luh_seals_baseline_adjustment, parent=p.restoration_task)
-    p.coarse_simplified_projected_ha_difference_from_previous_year_task = p.add_task(seals_main.coarse_simplified_projected_ha_difference_from_previous_year, parent=p.iucn_30by30_scenarios_task)
-
-
-    ##### ALLOCATION #####
-    p.allocations_task = p.add_iterator(seals_main.allocations)
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task)
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
-
-    ##### STITCH ZONES #####
-    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
-
-    ##### VIZUALIZE EXISTING DATA #####
-    p.visualization_task = p.add_task(seals_visualization_tasks.visualization)
-    # p.coarse_change_with_class_change_task = p.add_task(seals_visualization_tasks.coarse_change_with_class_change, parent=p.visualization_task)
-    # p.plot_full_change_matrices_task = p.add_task(seals_main.full_change_matrices, parent=p.visualization_task)
-    # p.plot_full_change_matrices_task = p.add_task(seals_visualization_tasks.full_change_matrices_pngs, parent=p.visualization_task)
-    p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
-    # p.coarse_fine_with_report_task = p.add_task(seals_visualization_tasks.coarse_fine_with_report, parent=p.visualization_task)
-    
-    
-    # For each class, plot the coarse and fine data
-    # p.create_full_change_matrices_task = p.add_task(seals_main.full_change_matrices, parent=p.visualization_task)
-    
-    # For each class, plot the coarse and fine data
-    # p.target_zones_matrices_task = p.add_task(seals_main.target_zones_matrices, parent=p.visualization_task)
-    
-    # For each class, plot the coarse and fine data
-    # p.plot_full_change_matrices_pngs_task = p.add_task(seals_visualization_tasks.full_change_matrices_pngs, parent=p.visualization_task)
-    
-    # For each class, plot the coarse and fine data
-    # p.plot_target_zones_matrices_pngs_task = p.add_task(seals_visualization_tasks.target_zones_matrices_pngs, parent=p.visualization_task)
-
-
-
-
-def build_regional_coarse_fine_restoration_shift_task_tree(p):
-
-    # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
-
-    ##### FINE PROCESSED INPUTS #####    
-    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
-    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    ##### COARSE CHANGE #####
-    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
-    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
-    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
-    p.coarse_simplified_ha_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha, parent=p.coarse_change_task, skip_existing=0)
-    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
-
-    # IUCN SPECIFIC
     p.restoration_task = p.add_task(seals_main.restoration)     
     p.protection_by_aezreg_to_meet_30by30_task = p.add_task(seals_main.protection_by_aezreg_to_meet_30by30, parent=p.restoration_task)
     p.luh_seals_baseline_adjustment_task = p.add_task(seals_main.luh_seals_baseline_adjustment, parent=p.restoration_task)
     p.coarse_simplified_projected_ha_difference_from_previous_year_task = p.add_task(seals_main.coarse_simplified_projected_ha_difference_from_previous_year, parent=p.restoration_task)
 
-
     ##### ALLOCATION #####
     p.allocations_task = p.add_iterator(seals_main.allocations)
     p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task)
@@ -952,42 +253,3 @@ def build_regional_coarse_fine_restoration_shift_task_tree(p):
     ##### VIZUALIZE EXISTING DATA #####
     p.visualization_task = p.add_task(seals_visualization_tasks.visualization)
     p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
-
-
-def build_regional_coarse_fine_manual_shift_task_tree(p):
-
-    # Define the project AOI
-    p.project_aoi_task = p.add_task(project_aoi)
-
-    ##### FINE PROCESSED INPUTS #####    
-    p.fine_processed_inputs_task = p.add_task(seals_generate_base_data.fine_processed_inputs)
-    p.generated_kernels_task = p.add_task(seals_generate_base_data.generated_kernels, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_clip_task = p.add_task(seals_generate_base_data.lulc_clip, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_simplifications_task = p.add_task(seals_generate_base_data.lulc_simplifications, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_binaries_task = p.add_task(seals_generate_base_data.lulc_binaries, parent=p.fine_processed_inputs_task, creates_dir=False)
-    p.lulc_convolutions_task = p.add_task(seals_generate_base_data.lulc_convolutions, parent=p.fine_processed_inputs_task, creates_dir=False)
-
-    ##### COARSE CHANGE #####
-    p.coarse_change_task = p.add_task(seals_process_coarse_timeseries.coarse_change, skip_existing=0)
-    p.extraction_task = p.add_task(seals_process_coarse_timeseries.coarse_extraction, parent=p.coarse_change_task, run=1, skip_existing=0)
-    p.coarse_simplified_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_proportion, parent=p.coarse_change_task, skip_existing=0)
-    p.coarse_simplified_ha_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha, parent=p.coarse_change_task, skip_existing=0)
-    p.coarse_simplified_ha_difference_from_previous_year_task = p.add_task(seals_process_coarse_timeseries.coarse_simplified_ha_difference_from_previous_year, parent=p.coarse_change_task, skip_existing=0)
-
-    ##### REGIONAL 
-    p.regional_change_task = p.add_task(seals_process_coarse_timeseries.regional_change)     
-
-
-    ##### ALLOCATION #####
-    p.allocations_task = p.add_iterator(seals_main.allocations)
-    p.allocation_zones_task = p.add_iterator(seals_main.allocation_zones, run_in_parallel=p.run_in_parallel, parent=p.allocations_task)
-    p.allocation_task = p.add_task(seals_main.allocation, parent=p.allocation_zones_task, skip_existing=1)
-
-    ##### STITCH ZONES #####
-    p.stitched_lulc_simplified_scenarios_task = p.add_task(seals_main.stitched_lulc_simplified_scenarios)
-
-    ##### VIZUALIZE EXISTING DATA #####
-    p.visualization_task = p.add_task(seals_visualization_tasks.visualization)
-    p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
-    
-    

@@ -1398,6 +1398,7 @@ def calibration_plots(passed_p=None):
 
 
 def allocations(p):
+    # Iterate through different scenarios to be allocated.
     """Create task to group downscaling of different scenarios."""
 
     if p.run_this:
@@ -1483,7 +1484,7 @@ def allocations(p):
 
 
 def allocation_zones(p):
-
+    # # Define the zones overwhich parallel allocation should be run
     # Generate lists of which zones change and thus need to be rerun. Note however that this is SUPER RISKY because if you have a partial run, it fails.
     p.combined_block_lists_paths = {
         'fine_blocks_list': os.path.join(p.cur_dir, 'fine_blocks_list.csv'),
@@ -1738,6 +1739,8 @@ def allocation_zones(p):
 
 
 def allocation(passed_p=None):
+    # Actually do the allocation
+    
     if passed_p is None:
         global p
     else:
@@ -2262,6 +2265,7 @@ def allocation(passed_p=None):
 
 
 def stitched_lulc_simplified_scenarios(p):
+    # Stitch the simplified LULC tiles back together
     """Stitch together the lulc_projected.tif files in each of the zones (or in the case of magpie, also in zones_adjusted).
     Also write on top of a global base map if selected so that areas not downscaled (like oceans) have the correct LULC from
     the base map. (E.g., we don't downscale the Falkland islands becuase SSPs don't have any change there. We don't want to delete
@@ -3020,120 +3024,12 @@ def coarse_simplified_projected_ha_difference_from_previous_year(p):
                                     return a + b                       
                             current_input_list = [current_coarse_input_path, displaced_path]
                             hb.raster_calculator_flex(current_input_list, do_the_shift, current_coarse_ha_diff_path, datatype=6, ndv=-9999., gtiff_creation_options=None, add_overviews=False)                                                    
-            
-def vector_projections_to_coarse_raster(p):
-    
-    if p.run_this:
-        
-
-        for index, row in p.scenarios_df.iterrows():
-            seals_utils.assign_df_row_to_object_attributes(p, row)
-            if p.scenario_type != 'baseline':
-
-                for years_c, year in enumerate(p.years): 
-                    if years_c == 0:
-                        previous_year = p.key_base_year
-                    else:
-                        previous_year = p.years[years_c - 1]
-                        
-                    projected_coarse_change_dir = os.path.join(p.intermediate_dir, 'coarse_change', 'coarse_simplified_ha_difference_from_previous_year', p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, str(year))
-
-                    for class_c, class_label in enumerate(p.changing_class_labels):
-                        
-                        
-                    #     current_year_filename = class_label + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif'
-                    #     print(5)
-                        
-                    #     future_ha_path = os.path.join(projected_coarse_change_dir, filename)
-                        
-                        
-                        
-                    #     # TODOOO: Join paths to the referenced location.
-                        
-                    #     p.iterator_replacements['projected_coarse_change_dir'].append(projected_coarse_change_dir)
-        
-
-
-                    # a_future = hb.as_array(p.luh_scenario_ha_total_paths[luh_scenario_label][scenario_year][class_label])
-                    # a_baseline = hb.as_array(policy_baseline_ha_total_paths[class_label])
-                    # a_future = np.where(a_future == -9999., 0, a_future)
-                    # a_baseline = np.where(a_baseline == -9999., 0, a_baseline)
-
-                    # change = a_future - a_baseline
-
-                    # # NOTE! This is a kinda awkward duplication of the seals7_difference_from_base_year, but that wasn't iterated over
-                    # # the different scenarios/years/etc
-                    # new_path = os.path.join(p.cur_dir, luh_scenario_label, str(scenario_year), 'luh_' + class_label + '_' + str(scenario_year) + '_' + str(p.policy_base_year) + '_ha_change.tif')
-                    # try:
-                    #     hb.create_directories(os.path.join(p.cur_dir, luh_scenario_label, str(scenario_year)))
-                    # except:
-                    #     pass
-                    # p.luh_scenario_ha_change_paths[luh_scenario_label][scenario_year][class_label] = new_path
-                    # hb.save_array_as_geotiff(change, new_path, policy_baseline_ha_total_paths['urban'])
-
-                    #  p.gtap1_ha_total_paths = {}
-
-
-                    # if class_label in p.class_labels_that_differ_between_ssp_and_gtap:
-                        luh_change_path = os.path.join(projected_coarse_change_dir, class_label + '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '.tif')
-                    
-                        # p.gtap1_ha_total_paths[luh_scenario_label][scenario_year][policy_scenario_label][class_label] = {}
-                        luh_change = hb.as_array(luh_change_path)
-
-                        p.gtap37_aez18_zones_raster_15min_path = os.path.join(p.cur_dir, 'gtap37_aez18_zones_raster_15min.tif')
-                        cells_per_zone = hb.unique_raster_values_count(p.gtap37_aez18_ids_15m_path) # NOTE, unique_raster_values_count returns a defaultdict which will fail if not as a defaultdict.
-
-                        # Create a raster that takes the total shift amount and scales it down by all the cells present in the zone to get the per-cell shift.
-                        rules = {
-                            merged_df['pyramid_id'].iloc[j]:
-                                np.float32(merged_df['gtap1_'+luh_scenario_label+'_'+str(scenario_year)+'_'+policy_scenario_label+'_'+class_label+'_dif_luh_change'].iloc[j]) / cells_per_zone[merged_df['pyramid_id'].iloc[j]]
-                                    for j in range(len(merged_df['gtap1_'+luh_scenario_label+'_'+str(scenario_year)+'_'+policy_scenario_label+'_'+class_label+'_dif_luh_change']))
-                        }
-                        # rules[-9999] = 0.0
-
-                        rules[-9999.] = np.float64(0.0)
-                        rules = {np.nan_to_num(k): np.nan_to_num(v) for k, v in rules.items()}
-
-                        L.info('Reclassifying rules onto regions: ' + str(rules))
-
-
-                        shift_path = os.path.join(p.cur_dir, luh_scenario_label, str(scenario_year), policy_scenario_label, str(class_label) + '_shift.tif')
-
-                        if not hb.path_exists(shift_path):
-                            input_array = hb.as_array(p.gtap37_aez18_ids_15m_path).astype(np.float32)
-
-                            gp.reclassify_raster((p.gtap37_aez18_ids_15m_path, 1), rules, shift_path, 6, -9999, hb.DEFAULT_GTIFF_CREATION_TUPLE_OPTIONS_HB)
-                            # hb.reclassify_flex(p.gtap37_aez18_ids_15m_path, rules, shift_path, output_data_type=6, verbose=False)
-
-                            shifter = hb.as_array(shift_path)
-                            shifter = np.where(shifter == -9999., 0, shifter)
-
-                            # Shift the luh spatial distribution around so that it matches the GTAP total.
-                            shifted_change = luh_change + shifter
-                            shifted_change = np.where(shifted_change == -9999, 0, shifted_change)
-                            shifted_change = np.where(input_array > 0, shifted_change, 0)
-                            gtap1_class_total_15min_path = os.path.join(p.cur_dir, luh_scenario_label, str(scenario_year), policy_scenario_label, 'gtap1_' + str(class_label) + '_ha_change_15min.tif')
-
-                            # Keep track of the tree of scenario paths for later use in seals.
-                            p.gtap1_ha_total_paths[luh_scenario_label][scenario_year][policy_scenario_label][class_label] = gtap1_class_total_15min_path
-                            hb.save_array_as_geotiff(shifted_change, gtap1_class_total_15min_path, p.luh_scenario_ha_total_paths[p.luh_scenario_labels[0]][scenario_year][class_label])
-
-                            # To validate that it actually does sum up, take the zonal stats of the new rasters
-                            df = hb.zonal_statistics_flex(gtap1_class_total_15min_path, p.gtap37_aez18_path, p.gtap37_aez18_ids_15m_path, id_column_label='pyramid_id',
-                                                        zones_ndv=-9999, values_ndv=-9999., zones_raster_data_type=5,
-                                                        stats_to_retrieve='sums',)
-                            # LEARNING POINT, the following two were not identical because I only wrote the new values and instead got junk memory for ndvs.
-                            # df = hb.zonal_statistics_flex(gtap1_class_total_15min_path, p.gtap37_aez18_path, p.gtap37_aez18_zones_raster_15min_path, id_column_label='pyramid_id',
-                            #                          zones_ndv=-9999, values_ndv=-9999., zones_raster_data_type=5,
-                            #                          stats_to_retrieve='sums',)
-                            df = df.rename(columns={'sums': 'gtap1_' +luh_scenario_label+'_'+ str(scenario_year) + '_' + policy_scenario_label + '_' + class_label + '_ha_change_spatialized_validation'})
-                            merged_df = merged_df.merge(df, left_on='pyramid_id', right_index=True, how='outer')
-                            merged_df = merged_df[merged_df['pyramid_id'].notna()]
-
 
 
 def stitched_lulc_esa_scenarios(p):
-
+    # optional
+    # Reclassify the stitched simplified to original classification.
+    
     def fill_where_not_changed(changed, baseline, esa):
         return np.where(changed == baseline, esa, changed)
 

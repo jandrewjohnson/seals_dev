@@ -1,3 +1,6 @@
+"UNFINISHED! Pull in the iucn test example but figure out where it all goes."
+
+
 import os, sys
 import seals_utils
 import seals_initialize_project
@@ -6,6 +9,8 @@ import pandas as pd
 
 main = ''
 if __name__ == '__main__':
+    
+    
     
     # Create a ProjectFlow Object to organize directories and enable parallel processing.
     p = hb.ProjectFlow()
@@ -16,8 +21,8 @@ if __name__ == '__main__':
     # files that already exist. 
     p.user_dir = os.path.expanduser('~')        
     p.extra_dirs = ['Files', 'seals', 'projects']
-    p.project_name = 'test_vector_aoi'
-    p.project_name = p.project_name + '_' + hb.pretty_time() # If don't you want to recreate everything each time, comment out this line.
+    p.project_name = 'test_all_supported_allocations'
+    # p.project_name = p.project_name + '_' + hb.pretty_time() # If don't you want to recreate everything each time, comment out this line.
     
     # Based on the paths above, set the project_dir. All files will be created in this directory.
     p.project_dir = os.path.join(p.user_dir, os.sep.join(p.extra_dirs), p.project_name)
@@ -26,7 +31,16 @@ if __name__ == '__main__':
     p.run_in_parallel = 1 # Must be set before building the task tree if the task tree has parralel iterator tasks.
 
     # Build the task tree via a building function and assign it to p. IF YOU WANT TO LOOK AT THE MODEL LOGIC, INSPECT THIS FUNCTION
-    seals_initialize_project.build_standard_task_tree(p)
+    """START HERE. Figure out how to call DIFFERENT TASK TREES. In the below, we would combine the standard task tree with the custom algorithm task tree.
+    Would This meaan that the task_tree name is passed in scenarios.csv? I think so. How is this different than the coarse_algorithm pointing
+    to a task? The task approach is substituting a specific input to the same tree whereas this approach of a whole different task tree would
+    change everything. What would happen if you tried to run scenarios.csv with a different task tree?
+    
+    Also, test that the different aoi's work. The end of this scenarios.csv includes not just RWA but rwa_bdi.gpkg
+    
+    
+    """
+    seals_initialize_project.build_all_supported_allocations_task_tree(p)
 
     # Set the base data dir. The model will check here to see if it has everything it needs to run.
     # If anything is missing, it will download it. You can use the same base_data dir across multiple projects.
@@ -45,7 +59,7 @@ if __name__ == '__main__':
     # If you have not run SEALS before, SEALS will generate it in your project's input_dir.
     # A useful way to get started is to to run SEALS on the test data without modification
     # and then edit the scenario_definitions.csv to your project needs.   
-    p.scenario_definitions_filename = 'test_vector_aoi_scenarios.csv' 
+    p.scenario_definitions_filename = 'test_all_supported_allocations_scenarios.csv' 
     p.scenario_definitions_path = os.path.join(p.input_dir, p.scenario_definitions_filename)
     seals_initialize_project.initialize_scenario_definitions(p)
         

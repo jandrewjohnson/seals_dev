@@ -14,7 +14,7 @@ cimport numpy as np
 from numpy cimport ndarray
 from libc.math cimport sin
 from libc.math cimport fabs
-import math, time
+import math, time   
 
 @cython.cdivision(False)
 @cython.boundscheck(True)

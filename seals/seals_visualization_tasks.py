@@ -10,7 +10,7 @@ import seals_utils
 from seals_visualization_functions import *
 
 def visualization(p):
-    # Just to create folder
+    # Make folder for all visualizations.
     pass
 
 def coarse_change_with_class_change_underneath(passed_p=None):
@@ -93,6 +93,8 @@ def coarse_change_with_class_change_underneath(passed_p=None):
 
 
 def coarse_change_with_class_change(passed_p=None):
+    # For each class, plot the coarse and fine data
+    
     if passed_p is None:
         global p 
     else:
@@ -632,6 +634,8 @@ def plot_final_run():
 
 
 def lulc_pngs(p):
+    # Simple plot of the PNGs.
+    
     if p.run_this:
         if p.scenario_definitions_path is not None:
             p.scenarios_df = pd.read_csv(p.scenario_definitions_path)

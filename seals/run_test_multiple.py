@@ -26,7 +26,7 @@ if __name__ == '__main__':
     p.run_in_parallel = 1 # Must be set before building the task tree if the task tree has parralel iterator tasks.
 
     # Build the task tree via a building function and assign it to p. IF YOU WANT TO LOOK AT THE MODEL LOGIC, INSPECT THIS FUNCTION
-    seals_initialize_project.build_standard_run_task_tree(p)
+    seals_initialize_project.build_standard_task_tree(p)
 
     # Set the base data dir. The model will check here to see if it has everything it needs to run.
     # If anything is missing, it will download it. You can use the same base_data dir across multiple projects.
