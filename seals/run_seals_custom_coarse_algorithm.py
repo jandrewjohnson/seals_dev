@@ -12,8 +12,6 @@ from seals import seals_initialize_project
 main = ''
 if __name__ == '__main__':
     
-    ### START HERE Fails because of zonal statistics on the custom task.
-    
     # Create a ProjectFlow Object to organize directories and enable parallel processing.
     p = hb.ProjectFlow()
 
