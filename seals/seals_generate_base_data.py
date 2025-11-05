@@ -357,27 +357,21 @@ def lulc_convolutions(p):
                     current_input_binary_path = os.path.join(p.fine_processed_inputs_dir, 'lulc', p.lulc_src_label, p.lulc_simplification_label, 'binaries', str(year), 'binary_'+p.lulc_src_label+'_'+p.lulc_simplification_label+'_'+str(year)+'_' + str(label)+'.tif')
                     # current_input_binary_path = p.lulc_simplified_binary_paths[current_file_root]
 
+                    # First, define where the file should be created
+                    current_convolution_path = os.path.join(p.fine_processed_inputs_dir, 'lulc', 'esa', 
+                        p.lulc_simplification_label, 'convolutions', str(year), 
+                        'convolution_'+p.lulc_src_label+'_'+p.lulc_simplification_label+'_'+str(year)+'_' + 
+                        str(label) + '_gaussian_' + str(sigma) + '.tif')
 
-                    current_convolution_path = os.path.join(p.fine_processed_inputs_dir, 'lulc', 'esa', p.lulc_simplification_label, 'convolutions', str(year), 'convolution_'+p.lulc_src_label+'_'+p.lulc_simplification_label+'_'+str(year)+'_' + str(label) + '_gaussian_' + str(sigma) + '.tif')
-                    current_convolution_relative_path = os.path.join('lulc', 'esa', p.lulc_simplification_label, 'convolutions', str(year), 'convolution_'+p.lulc_src_label+'_'+p.lulc_simplification_label+'_'+str(year)+'_' + str(label) + '_gaussian_' + str(sigma) + '.tif')
+                    # Store this path in dictionary
+                    p.lulc_simplified_convolution_paths[current_convolution_name] = current_convolution_path
 
-                    this_path = p.get_path(current_convolution_relative_path, prepend_possible_dirs=[p.fine_processed_inputs_dir], verbose=False)
-                    p.lulc_simplified_convolution_paths[current_convolution_name] = this_path
-                    # Check to see if it exists in the present base data
-                    # current_structure = hb.get_path_after_dir(current_convolution_path, p.project_name)
-                    # base_data_trailing_dirs = os.sep.join(current_structure.split(os.sep)[2:])
-                    # base_data_equivilent_path = os.path.join(p.base_data_dir, base_data_trailing_dirs)
-                    # if hb.path_exists(base_data_equivilent_path):
-                    #     p.lulc_simplified_convolution_paths[current_convolution_name] = base_data_equivilent_path
-                    # else:
-                    #     p.lulc_simplified_convolution_paths[current_convolution_name] = current_convolution_path
-
-                    # current_bulk_convolution_path = os.path.join(p.model_base_data_dir, 'convolutions', 'lulc_esa_simplified_' + str(year), current_convolution_name + '.tif')
-                    # NOTE, fft_gaussian has to write to disk, which i think i have to embrace.
+                    # Then check if it exists and add to parallel processing if needed
                     if not os.path.exists(p.lulc_simplified_convolution_paths[current_convolution_name]):
-
-                        hb.log('  Starting FFT Gaussian (in parallel) on ' + current_input_binary_path + ' and saving to ' + p.lulc_simplified_convolution_paths[current_convolution_name])
-                        parallel_iterable.append([current_input_binary_path, kernel_path, p.lulc_simplified_convolution_paths[current_convolution_name], -9999.0, True])
+                        hb.log(' Starting FFT Gaussian (in parallel) on ' + current_input_binary_path + 
+                               ' and saving to ' + p.lulc_simplified_convolution_paths[current_convolution_name])
+                        parallel_iterable.append([current_input_binary_path, kernel_path, 
+                                                  p.lulc_simplified_convolution_paths[current_convolution_name], -9999.0, True])
 
         if len(parallel_iterable) > 0 and p.run_this:
             num_workers = max(min(multiprocessing.cpu_count() - 1, len(parallel_iterable)), 1)
