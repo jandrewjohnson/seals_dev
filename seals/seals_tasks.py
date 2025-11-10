@@ -75,12 +75,14 @@ def project_aoi(p):
         p.aoi_ha_per_cell_fine_path = os.path.join(p.cur_dir, 'pyramids', 'aoi_ha_per_cell_fine.tif')
         if not hb.path_exists(p.aoi_ha_per_cell_fine_path):
             hb.create_directories(p.aoi_ha_per_cell_fine_path)
-            hb.clip_raster_by_bb(p.ha_per_cell_paths[p.fine_resolution_arcseconds], p.bb, p.aoi_ha_per_cell_fine_path)
+            cur_path = p.get_path(hb.ha_per_cell_ref_paths[p.fine_resolution_arcseconds])
+            hb.clip_raster_by_bb(cur_path, p.bb, p.aoi_ha_per_cell_fine_path)
         
         p.aoi_ha_per_cell_coarse_path = os.path.join(p.cur_dir, 'pyramids', 'aoi_ha_per_cell_coarse.tif')
         if not hb.path_exists(p.aoi_ha_per_cell_coarse_path):
             hb.create_directories(p.aoi_ha_per_cell_coarse_path)
-            hb.clip_raster_by_bb(p.ha_per_cell_paths[p.coarse_resolution_arcseconds], p.bb, p.aoi_ha_per_cell_coarse_path)
+            cur_path = p.get_path(hb.ha_per_cell_ref_paths[p.coarse_resolution_arcseconds])
+            hb.clip_raster_by_bb(cur_path, p.bb, p.aoi_ha_per_cell_coarse_path)
                     
     else:
         raise NameError('Unable to interpret p.aoi.')
