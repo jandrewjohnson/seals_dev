@@ -17,7 +17,6 @@ from seals import seals_visualization_tasks
 from seals import config
 from seals import seals_tasks
 from seals import ecosystem_services
-from seals import seals_zonal_stats
 
 
 def set_advanced_options(p):
