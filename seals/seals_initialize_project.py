@@ -15,8 +15,6 @@ from seals import seals_generate_base_data
 from seals import seals_process_coarse_timeseries
 from seals import seals_visualization_tasks
 from seals import config
-from seals import seals_tasks
-from seals import ecosystem_services
 
 
 def set_advanced_options(p):
