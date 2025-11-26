@@ -60,6 +60,10 @@ def regional_change(p):
                         scenario_label = p.scenario_label    
                         output_filename_end = '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_regional_coarsified.tif'
                         regions_column_label = p.regions_column_label
+                        
+                        if getattr(p, 'regional_projections_input_override_path', None):
+                            regional_change_classes_path = p.regional_projections_input_override_path
+                        
                         # TODOO I should have iterated on class label here, then called the util file only on that one
                         seals_utils.convert_regional_change_to_coarse(regional_change_vector_path, 
                                                                       regional_change_classes_path, 
