@@ -1476,13 +1476,16 @@ def load_blocks_list(p, input_dir):
 
 def convert_regional_change_to_coarse(regional_change_vector_path, regional_change_classes_path, coarse_ha_per_cell_path, scenario_label, output_dir, output_filename_end, columns_to_process, regions_column_label, years, region_ids_raster_path=None,  distribution_algorithm='proportional', coarse_change_raster_path=None):
     # Converts a regional vector change map to a coarse gridded representation. 
-    # - Regiona_change_vector_path is a gpkg with the boundaries of the regions that are changing.
+    # - regional_change_vector_path is a gpkg with the boundaries of the regions that are changing.
     # - regional_change_classes_path is a csv with columns for each changing landuse class (in columns to process) that reports net change in hectares per polygon.
-    # - Coarse_ha_per_cell_path is a raster that reports the number of hectares per cell in the coarse grid. Necessary to work with unprojected data, which is our assumed form.
-    # - Output path is the path to save the output raster.
-    # - Columns to process is a list of the columns headers in the gpkg that represent net changes in LU classes.
+    #   This CSV can be in two formats:
+    #     1. Class-based format (original): columns are land-use classes (e.g., 'cropland', 'forest'), rows are regions
+    #     2. Year-based format (new): columns are years (e.g., '2030', '2050'), rows are regions + class combinations with a 'class' column
+    # - coarse_ha_per_cell_path is a raster that reports the number of hectares per cell in the coarse grid. Necessary to work with unprojected data, which is our assumed form.
+    # - output_dir is the directory where output rasters will be saved.
+    # - columns_to_process is a list of the column headers that represent net changes in LU classes.
     # - distribution_algorithm is a string that indicates how to distribute the change across the cells. default is "proportional".
-    # - Coarse_change_raster_path is an optional path that, if provided, will be combined with the regional change to produce a combined change raster.  
+    # - coarse_change_raster_path is an optional path that, if provided, will be combined with the regional change to produce a combined change raster.  
     
     # Read both inputs                          
     regional_change_vector = gpd.read_file(regional_change_vector_path)    
@@ -1529,37 +1532,128 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
 
     ### Define the allocation of the total to individual cells
     
+    # Detect if the CSV has years as columns (year-based format) or classes as columns (class-based format)
+    # Year-based format: columns are years (e.g., '2030', '2050'), rows have region + class
+    # Class-based format: columns are classes (e.g., 'cropland', 'forest'), rows have region only
+    
+    # Check if any of the columns_to_process appear in the merged dataframe columns
+    # If not, we assume it's a year-based format that needs pivoting
+    has_class_columns = any(col in merged.columns for col in columns_to_process)
+    
+    # Check if any year appears as a column (as string or int)
+    year_columns = [col for col in merged.columns if str(col).replace('.', '').replace('-', '').isdigit()]
+    has_year_columns = len(year_columns) > 0
+    
+    if not has_class_columns and has_year_columns:
+        # Year-based format detected - need to pivot the data
+        # Expected format: region_id/label, class_label, year1, year2, ..., yearN
+        # We need to transform it to: region_id/label, class1, class2, ..., classN (for each year)
+        
+        # Find the class column name (usually 'class', 'lulc_class', 'class_label', etc.)
+        class_column_candidates = ['class', 'lulc_class', 'class_label', 'land_class', 'landuse_class']
+        class_column = None
+        for candidate in class_column_candidates:
+            if candidate in merged.columns:
+                class_column = candidate
+                break
+        
+        if class_column is None:
+            # Try to find any column that might contain class information
+            for col in merged.columns:
+                if 'class' in col.lower() and col != regions_column_label:
+                    class_column = col
+                    break
+        
+        if class_column is None:
+            raise NameError('Could not detect class column in year-based format CSV. Expected columns like "class", "lulc_class", or "class_label".')
+        
+        hb.log('Detected year-based format in CSV. Pivoting data from class column: ' + class_column)
+    
     # Creates a dict for each zone_id: to_allocate, which will be reclassified onto the zone ids.
     for year_c, year in enumerate(years):
         allocate_per_zone_dict = {}
-        for column in columns_to_process:
-            output_path = os.path.join(output_dir, column + output_filename_end)
+        
+        # If year-based format, we need to work with data for this specific year
+        if not has_class_columns and has_year_columns:
+            # Find the column for this year (could be string or int)
+            year_col = None
+            for col in year_columns:
+                try:
+                    if str(col) == str(year) or int(col) == int(year):
+                        year_col = col
+                        break
+                except (ValueError, TypeError):
+                    # Skip columns that can't be converted to int
+                    if str(col) == str(year):
+                        year_col = col
+                        break
             
-            if not hb.path_exists(output_path):
-                hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
-                regions_column_id = regions_column_id.replace('label', 'id')
+            if year_col is None:
+                hb.log('Warning: Year ' + str(year) + ' not found in CSV columns. Available years: ' + str(year_columns))
+                continue
+            
+            # For each class we need to process, extract the data from the pivoted structure
+            for column in columns_to_process:
+                output_path = os.path.join(output_dir, column + output_filename_end)
                 
-
-                for i, change in merged[column].items():
-                    zone_id = int(merged[regions_column_id][i])
+                if not hb.path_exists(output_path):
+                    hb.log('Processing ' + column + ' for year ' + str(year) + ' in ' + scenario_label + ',  writing to ' + output_path)
+                    regions_column_id = regions_column_id.replace('label', 'id')
                     
-                    if int(zone_id) in n_cells_per_zone:
-                        n_cells = n_cells_per_zone[int(zone_id)] # BAD HACK, should be generalized to know ahead of time if it's an int or string
-                    else:
-                        n_cells = 0
+                    # Filter merged dataframe for this specific class
+                    class_data = merged[merged[class_column] == column]
+                    
+                    # Now iterate over the filtered data to get regional values for this year and class
+                    for idx, row in class_data.iterrows():
+                        zone_id = int(row[regions_column_id])
+                        change = row[year_col]
                         
-                    if n_cells > 0  and change != 0:
-                        result = change / n_cells
-                    else:
-                        result = 0.0
+                        if int(zone_id) in n_cells_per_zone:
+                            n_cells = n_cells_per_zone[int(zone_id)]
+                        else:
+                            n_cells = 0
+                        
+                        if n_cells > 0 and not pd.isna(change) and change != 0:
+                            result = change / n_cells
+                        else:
+                            result = 0.0
+                        
+                        if pd.isna(result):
+                            allocate_per_zone_dict[zone_id] = 0.0
+                        else:
+                            allocate_per_zone_dict[zone_id] = result
+                    
+                    hb.log('Allocate per zone dict for ' + column + ' (year ' + str(year) + '): ' + str(allocate_per_zone_dict))
+                    hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, match_path=None, invoke_full_callback=False, existing_values='zero', verbose=False)
+        else:
+            # Original class-based format logic
+            for column in columns_to_process:
+                output_path = os.path.join(output_dir, column + output_filename_end)
+                
+                if not hb.path_exists(output_path):
+                    hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
+                    regions_column_id = regions_column_id.replace('label', 'id')
 
-                    if 'nan' in str(result).lower():
-                        allocate_per_zone_dict[zone_id] = 0.0
-                    else: 
-                        allocate_per_zone_dict[zone_id] = result
+                    for i, change in merged[column].items():
+                        zone_id = int(merged[regions_column_id][i])
+                        
+                        if int(zone_id) in n_cells_per_zone:
+                            n_cells = n_cells_per_zone[int(zone_id)] # BAD HACK, should be generalized to know ahead of time if it's an int or string
+                        else:
+                            n_cells = 0
                             
-                print('Allocate per zone dict for ' + column + ': ' + str(allocate_per_zone_dict))
-                hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, match_path=None, invoke_full_callback=False, existing_values='zero', verbose=False)
+                        if n_cells > 0  and change != 0:
+                            result = change / n_cells
+                        else:
+                            result = 0.0
+
+                        if pd.isna(result):
+                            allocate_per_zone_dict[zone_id] = 0.0
+                        else: 
+                            allocate_per_zone_dict[zone_id] = result
+                                
+                    hb.log('Allocate per zone dict for ' + column + ': ' + str(allocate_per_zone_dict))
+                    hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, match_path=None, invoke_full_callback=False, existing_values='zero', verbose=False)
                     
 def combine_coarsified_regional_with_coarse_estimate(coarsified_path, coarse_estimate_path, combination_algorithm, output_path):
     ### ABANDONED?
