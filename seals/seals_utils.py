@@ -1529,6 +1529,8 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
 
     ### Define the allocation of the total to individual cells
     
+    # TODO If the user provides a regional_change_classes_path that has each year as a column, instead of the current format which has 
+    
     # Creates a dict for each zone_id: to_allocate, which will be reclassified onto the zone ids.
     for year_c, year in enumerate(years):
         allocate_per_zone_dict = {}
@@ -1539,6 +1541,7 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
                 hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
                 regions_column_id = regions_column_id.replace('label', 'id')
                 
+                # TODO Right here, we see that the merged dataframes have years in the columns (instead of a single column with year as a variable). But we actually want landuse class in the columns. Pivot this table so it works.
 
                 for i, change in merged[column].items():
                     zone_id = int(merged[regions_column_id][i])
