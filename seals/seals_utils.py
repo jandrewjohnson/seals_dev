@@ -1578,9 +1578,15 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
             # Find the column for this year (could be string or int)
             year_col = None
             for col in year_columns:
-                if str(col) == str(year) or int(col) == int(year):
-                    year_col = col
-                    break
+                try:
+                    if str(col) == str(year) or int(col) == int(year):
+                        year_col = col
+                        break
+                except (ValueError, TypeError):
+                    # Skip columns that can't be converted to int
+                    if str(col) == str(year):
+                        year_col = col
+                        break
             
             if year_col is None:
                 hb.log('Warning: Year ' + str(year) + ' not found in CSV columns. Available years: ' + str(year_columns))
@@ -1607,17 +1613,17 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
                         else:
                             n_cells = 0
                         
-                        if n_cells > 0 and change != 0 and not pd.isna(change):
+                        if n_cells > 0 and not pd.isna(change) and change != 0:
                             result = change / n_cells
                         else:
                             result = 0.0
                         
-                        if 'nan' in str(result).lower() or pd.isna(result):
+                        if pd.isna(result):
                             allocate_per_zone_dict[zone_id] = 0.0
                         else:
                             allocate_per_zone_dict[zone_id] = result
                     
-                    print('Allocate per zone dict for ' + column + ' (year ' + str(year) + '): ' + str(allocate_per_zone_dict))
+                    hb.log('Allocate per zone dict for ' + column + ' (year ' + str(year) + '): ' + str(allocate_per_zone_dict))
                     hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, match_path=None, invoke_full_callback=False, existing_values='zero', verbose=False)
         else:
             # Original class-based format logic
@@ -1641,12 +1647,12 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
                         else:
                             result = 0.0
 
-                        if 'nan' in str(result).lower():
+                        if pd.isna(result):
                             allocate_per_zone_dict[zone_id] = 0.0
                         else: 
                             allocate_per_zone_dict[zone_id] = result
                                 
-                    print('Allocate per zone dict for ' + column + ': ' + str(allocate_per_zone_dict))
+                    hb.log('Allocate per zone dict for ' + column + ': ' + str(allocate_per_zone_dict))
                     hb.reclassify_raster_hb(region_ids_raster_path, allocate_per_zone_dict, output_path, output_data_type=7, match_path=None, invoke_full_callback=False, existing_values='zero', verbose=False)
                     
 def combine_coarsified_regional_with_coarse_estimate(coarsified_path, coarse_estimate_path, combination_algorithm, output_path):
