@@ -213,6 +213,7 @@ def build_standard_task_tree(p):
     ##### VIZUALIZE EXISTING DATA #####
     p.visualization_task = p.add_task(seals_visualization_tasks.visualization)
     p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
+    p.html_report_task = p.add_task(seals_visualization_tasks.html_report, parent=p.visualization_task)
 
     
 def build_ken_task_tree(p):
