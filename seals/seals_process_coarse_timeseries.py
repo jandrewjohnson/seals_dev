@@ -149,7 +149,7 @@ def regional_change(p):
                                     covariate_sum_shift_path = hb.suri(output_path_template, 'covariate_sum_shift')
                                     input = ((regional_coarsified_path, 1), (current_luc_coarse_projections_path, 1), (target_raster_path, 1))
                                     def op(a, b, c):
-                                        return (a - (c-b)) * 1000.0
+                                        return (a - (c-b))
                                     hb.raster_calculator(input, op, covariate_sum_shift_path, 7, -9999.)
 
                                 #### COVARIATE MULTIPLY SHIFT
@@ -226,7 +226,7 @@ def regional_change(p):
                                 covariate_multiply_shift_path = hb.suri(output_path_template, 'covariate_multiply_shift')
                                 input = ((current_luc_coarse_projections_path, 1), (covariate_multiply_regional_change_sum_path, 1), (covariate_multiply_regional_change_sum_path, 1))
                                 def op(a, b, c):
-                                    return (a * (b/c)) * 1000.0
+                                    return (a * (b/c))
                                 hb.raster_calculator(input, op, covariate_multiply_shift_path, 7, -9999.)
                                 
                                 # This is the one i want to use so also save it as the template. Can choose from different algorithms above.
