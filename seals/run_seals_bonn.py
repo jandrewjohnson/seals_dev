@@ -4,49 +4,84 @@ import sys
 import hazelbean as hb
 import pandas as pd
 
-from seals import seals_generate_base_data, seals_initialize_project, seals_main, seals_process_coarse_timeseries, seals_tasks, seals_visualization_tasks
+from seals import seals_generate_base_data, seals_initialize_project, seals_main, seals_process_coarse_timeseries, seals_tasks, seals_utils, seals_visualization_tasks
 
+# TODO
+# 1. make regional projections be the change not the total. 
+# 2. decide how to handle project_dir in the project repo so it uses the git-cloned inputs.
+# 3. test the setup.bat and decide if it's dumb to put it in the src (tho with git ignore listed)
 
 
 def convert_cgebox_output_to_seals_regional_projections_input(p):
     
-    input_path = p.regional_projections_input_path
-    output_path = os.path.join(p.cur_dir, 'regional_projections_input_pivoted.csv')
-    p.regional_projections_input_override_path = output_path
+
     
+    p.regional_projections_input_override_paths = {}
     if p.run_this:
-        
-        if not hb.path_exists(output_path):
-            df = hb.df_read(input_path)
-            
-            # Step 1: Melt the DataFrame to convert year columns into rows.
+        for index, row in p.scenarios_df.iterrows():
+            seals_utils.assign_df_row_to_object_attributes(p, row)
 
-            # Get the list of columns to unpivot (years)
-            years_to_unpivot = [col for col in df.columns if col.isdigit()]
-            # years_to_unpivot = []
-            melted = df.melt(
-                id_vars=[p.regions_column_label, 'LandCover'], # Assumes the land cover column is named 'LandCover'
-                value_vars=years_to_unpivot,
-                var_name='year',
-                value_name='value'
-            )
+            if p.scenario_type != 'baseline':    
+                input_path = p.regional_projections_input_path
+                output_path = os.path.join(p.cur_dir, f'regional_projections_input_pivoted_{p.exogenous_label}.csv')     
+                
+                # START HERE, the override doesn't work cause it doesn't iterate over years.... use a catear?           
+                p.regional_projections_input_override_paths[p.scenario_label] = output_path
+                    
+                if not hb.path_exists(output_path):
+                    df = hb.df_read(input_path)
+                    
+                    # Step 1: Melt the DataFrame to convert year columns into rows.
 
-            # Step 2: Pivot the melted DataFrame.
-            # We set the region and year as the new index, and create new columns from 'LandCover' categories.
-            merged_pivoted = melted.pivot_table(
-                index=[p.regions_column_label, 'year'],
-                columns='LandCover',
-                values='value'
-            ).reset_index()
+                    # Get the list of columns to unpivot (years)
+                    years_to_unpivot = [col for col in df.columns if col.isdigit()]
+                    # years_to_unpivot = []
+                    melted = df.melt(
+                        id_vars=[p.regions_column_label, 'LandCover'], # Assumes the land cover column is named 'LandCover'
+                        value_vars=years_to_unpivot,
+                        var_name='year',
+                        value_name='value'
+                    )
 
+                    # Step 2: Pivot the melted DataFrame.
+                    # We set the region and year as the new index, and create new columns from 'LandCover' categories.
+                    merged_pivoted = melted.pivot_table(
+                        index=[p.regions_column_label, 'year'],
+                        columns='LandCover',
+                        values='value'
+                    ).reset_index()
+
+                    
+                    # Now add nuts_id
+                    merged_pivoted['nuts_id'], unique_countries = pd.factorize(merged_pivoted[p.regions_column_label])
+                    merged_pivoted['nuts_id'] = merged_pivoted['nuts_id'] + 1
+                    
+                    # Define the columns for which the year-over-year change should be calculated
+                    land_use_columns = ['cropland', 'forest', 'grassland', 'other', 'othernat', 'urban', 'water']
+
+                    # Sort the DataFrame by 'nuts_label' and 'year' to ensure correct chronological order
+                    df_sorted = merged_pivoted.sort_values(by=['nuts_label', 'year'])
+
+                    # Group by 'nuts_label' and calculate the difference for the specified columns
+                    # .diff() calculates the difference from the previous row within each group
+                    # .fillna(0) replaces the initial NaN values with 0
+                    df_sorted[land_use_columns] = df_sorted.groupby('nuts_label')[land_use_columns].diff().fillna(0)
+
+                    # The 'df_sorted' DataFrame now contains the year-over-year change.
+                    # You can display the first few rows of the result for a specific region to verify.
+                    print("Year-over-year changes for CZ03:")
+                    print(df_sorted[df_sorted['nuts_label'] == 'CZ03'].head())            
+                    
+                    # multiply by 1000 because i think cgebox outputs in thousands of ha
+                    for col in land_use_columns:
+                        df_sorted[col] = df_sorted[col] * 1000
+                    # 2019 2020 2021 2023 2025 2027 2029 2030 2031 2033 2035 2037 2039 2040 2041 2043 2045 2047 2049 2050
+                    # repeat these numbers
+                    
+                    # Write a new file in the task dir and reassign the project attribute to the new csv
+                    hb.df_write(df_sorted, output_path)
+                
             
-            # Now add nuts_id
-            merged_pivoted['nuts_id'], unique_countries = pd.factorize(merged_pivoted[p.regions_column_label])
-            
-            # Write a new file in the task dir and reassign the project attribute to the new csv
-            hb.df_write(merged_pivoted, output_path)
-        
-        
 def build_bonn_task_tree(p):
 
     # Define the project AOI
