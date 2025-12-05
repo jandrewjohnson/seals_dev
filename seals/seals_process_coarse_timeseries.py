@@ -60,6 +60,10 @@ def regional_change(p):
                         scenario_label = p.scenario_label    
                         output_filename_end = '_' + str(year) + '_' + str(previous_year) + '_ha_diff_' + p.exogenous_label + '_' + p.climate_label + '_' + p.model_label + '_' + p.counterfactual_label + '_regional_coarsified.tif'
                         regions_column_label = p.regions_column_label
+                        
+                        if getattr(p, 'regional_projections_input_override_paths', None):
+                            regional_change_classes_path = p.regional_projections_input_override_paths[p.scenario_label]
+                        
                         # TODOO I should have iterated on class label here, then called the util file only on that one
                         seals_utils.convert_regional_change_to_coarse(regional_change_vector_path, 
                                                                       regional_change_classes_path, 
@@ -98,7 +102,7 @@ def regional_change(p):
                                 regional_coarsified_raster = hb.as_array(regional_coarsified_path)
                                 
                                 # covariate_additive
-                                covariate_additive = (current_luc_coarse_projections + regional_coarsified_raster) * 1000.0
+                                covariate_additive = (current_luc_coarse_projections + regional_coarsified_raster)
                                 hb.save_array_as_geotiff(covariate_additive, hb.suri(output_path_template, 'covariate_additive'), current_luc_coarse_projections_path)
                             
 
@@ -148,8 +152,11 @@ def regional_change(p):
                                 
                                     covariate_sum_shift_path = hb.suri(output_path_template, 'covariate_sum_shift')
                                     input = ((regional_coarsified_path, 1), (current_luc_coarse_projections_path, 1), (target_raster_path, 1))
+                                    
+                                    print('WARNING! sometimes need to use *1000 here to convert from ha to m2. Check if this is desired behavior. GTAP NEEDS THIS OTHERS DONT')
                                     def op(a, b, c):
-                                        return (a - (c-b)) * 1000.0
+                                        return (a - (c-b)) 
+                                        # return (a - (c-b)) * 1000
                                     hb.raster_calculator(input, op, covariate_sum_shift_path, 7, -9999.)
 
                                 #### COVARIATE MULTIPLY SHIFT
@@ -226,7 +233,7 @@ def regional_change(p):
                                 covariate_multiply_shift_path = hb.suri(output_path_template, 'covariate_multiply_shift')
                                 input = ((current_luc_coarse_projections_path, 1), (covariate_multiply_regional_change_sum_path, 1), (covariate_multiply_regional_change_sum_path, 1))
                                 def op(a, b, c):
-                                    return (a * (b/c)) * 1000.0
+                                    return (a * (b/c))
                                 hb.raster_calculator(input, op, covariate_multiply_shift_path, 7, -9999.)
                                 
                                 # This is the one i want to use so also save it as the template. Can choose from different algorithms above.
@@ -234,7 +241,7 @@ def regional_change(p):
                                 hb.path_copy(alg_to_use_path, output_path_template)
                                 5
                             # Given all of these, copy the one that we want to use to the name without a label
-                                    
+                        # 2019 2020 2021 2023 2025 2027 2029 2030 2031 2033 2035 2037 2039 2040 2041 2043 2045 2047 2049 2050             
                                 
 
                 else:
@@ -338,7 +345,7 @@ def regional_change_new_test(p):
                             regional_coarsified_raster = hb.as_array(regional_coarsified_path)
                             
                             # covariate_additive
-                            covariate_additive = (current_luc_coarse_projections + regional_coarsified_raster) * 1000.0
+                            covariate_additive = (current_luc_coarse_projections + regional_coarsified_raster)
                             hb.save_array_as_geotiff(covariate_additive, hb.suri(output_path_template, 'covariate_additive'), current_luc_coarse_projections_path)
                            
 
@@ -389,7 +396,7 @@ def regional_change_new_test(p):
                                 covariate_sum_shift_path = hb.suri(output_path_template, 'covariate_sum_shift')
                                 input = ((regional_coarsified_path, 1), (current_luc_coarse_projections_path, 1), (target_raster_path, 1))
                                 def op(a, b, c):
-                                    return (a - (c-b)) * 1000
+                                    return (a - (c-b))
                                 hb.raster_calculator(input, op, covariate_sum_shift_path, 7, -9999.)
 
                             #### COVARIATE MULTIPLY SHIFT
@@ -465,7 +472,7 @@ def regional_change_new_test(p):
                             covariate_multiply_shift_path = hb.suri(output_path_template, 'covariate_multiply_shift')
                             input = ((current_luc_coarse_projections_path, 1), (covariate_multiply_regional_change_sum_path, 1), (covariate_multiply_regional_change_sum_path, 1))
                             def op(a, b, c):
-                                return (a * (b/c)) * 1000
+                                return (a * (b/c))
                             hb.raster_calculator(input, op, covariate_multiply_shift_path, 7, -9999.)
 
                             if p.region_to_coarse_algorithm == 'covariate_additive':

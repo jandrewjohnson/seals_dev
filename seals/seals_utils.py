@@ -1508,7 +1508,11 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
     
     if region_ids_raster_path is None:
         region_ids_raster_path = os.path.join(output_dir, 'region_ids.tif')
+        
+    merged_vector_output_path = os.path.join(os.path.split(region_ids_raster_path)[0], 'regional_change_with_ids_' + scenario_label + '.gpkg')
     
+
+    merged.to_file(merged_vector_output_path, driver='GPKG')
     
     ### Rasterize the regions vector to a raster.
     
@@ -1519,7 +1523,7 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
 
         # TODOO NOTE that here we are not using all_touched. This is a fundamental problem with coarse reclassification. Lots of the polygon will be missed. Ideally, you use all_touched=False for
         # country-country borders but all_touched=True for country-coastline boarders. Or join with EEZs?
-        hb.rasterize_to_match(regional_change_vector_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name=regions_column_id, burn_values=None, datatype=13, ndv=0, all_touched=False)
+        hb.rasterize_to_match(merged_vector_output_path, coarse_ha_per_cell_path, region_ids_raster_path, burn_column_name=regions_column_id, burn_values=None, datatype=13, ndv=0, all_touched=False)
 
     ### Get the number of cells per zone. 
     
