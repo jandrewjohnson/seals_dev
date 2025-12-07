@@ -832,10 +832,14 @@ def coarse_extraction(p):
 
             if p.scenario_type == 'baseline':
 
-                if hb.path_exists(os.path.join(p.input_dir, p.coarse_projections_input_path)):
+
+                if hb.path_exists(p.coarse_projections_input_path):
+                    src_nc_path = p.coarse_projections_input_path
+                elif hb.path_exists(os.path.join(p.input_dir, p.coarse_projections_input_path)):
                     src_nc_path = os.path.join(p.input_dir, p.coarse_projections_input_path)
                 elif hb.path_exists(os.path.join(p.base_data_dir, p.coarse_projections_input_path)):
                     src_nc_path = os.path.join(p.base_data_dir, p.coarse_projections_input_path)
+
                 else:
                     hb.log('Could not find ' + str(p.coarse_projections_input_path) + ' in either ' + str(p.input_dir) + ' or ' + str(p.base_data_dir))
 
@@ -853,13 +857,15 @@ def coarse_extraction(p):
                     extract_global_netcdf(src_nc_path, dst_dir, adjustment_dict, filter_dict, skip_if_exists=True, verbose=0)
             else:
                 if p.coarse_projections_input_path:
-                    if hb.path_exists(os.path.join(p.input_dir, p.coarse_projections_input_path)):
+                    if hb.path_exists(p.coarse_projections_input_path):
+                        src_nc_path = p.coarse_projections_input_path                          
+                    elif hb.path_exists(os.path.join(p.input_dir, p.coarse_projections_input_path)):
                         src_nc_path = os.path.join(p.input_dir, p.coarse_projections_input_path)
                     elif hb.path_exists(os.path.join(p.base_data_dir, p.coarse_projections_input_path)):
-                        src_nc_path = os.path.join(p.base_data_dir, p.coarse_projections_input_path)
+                        src_nc_path = os.path.join(p.base_data_dir, p.coarse_projections_input_path)                  
                     else:
                         hb.log('No understandible input_source.')
-                        raise NameError('No understandible input_source for coarse_projections_input_path. The ref_path is specified in the scenario csv file, which resolves to a local or downloadable path. If you got here, it means that the file was not on the online storage bucket you are pointing to. The manual workaround is just to download the file manually and put it in your base_data directly. Path in question is ' + str(p.coarse_projections_input_path))
+                        raise NameError('No understandible input_source for coarse_projections_input_path. The ref_path is specified in the scenario csv file, which resolves to a local or downloadable path. If you got here, it means that the file was not on the online storage bucket you are pointing to. The manual workaround is just to download the file manually and put it in your base_data directly. Path in question is ' + str(p.coarse_projections_input_path) + ' at abspath ' + str(os.path.abspath(p.coarse_projections_input_path)))
                 else:
                     hb.log('No coarse change listed')
 
@@ -1140,7 +1146,9 @@ def coarse_simplified_ha_difference_from_previous_year(p):
             seals_utils.assign_df_row_to_object_attributes(p, row)
             hb.log('Converting coarse_extraction to simplified proportion for scenario ' + str(index) + ' of ' + str(len(p.scenarios_df)) + ' with row ' + str([i for i in row]))
 
-            if hb.path_exists(os.path.join(p.input_dir, p.coarse_correspondence_path)):
+            if hb.path_exists(p.coarse_correspondence_path):
+                p.lulc_correspondence_dict = hb.utils.get_reclassification_dict_from_df(p.coarse_correspondence_path, 'src_id', 'dst_id', 'src_label', 'dst_label')
+            elif hb.path_exists(os.path.join(p.input_dir, p.coarse_correspondence_path)):
                 p.lulc_correspondence_dict = hb.utils.get_reclassification_dict_from_df(os.path.join(p.input_dir, p.coarse_correspondence_path), 'src_id', 'dst_id', 'src_label', 'dst_label')
             elif hb.path_exists(os.path.join(p.base_data_dir, p.coarse_correspondence_path)):
                 p.lulc_correspondence_dict = hb.utils.get_reclassification_dict_from_df(os.path.join(p.base_data_dir, p.coarse_correspondence_path), 'src_id', 'dst_id', 'src_label', 'dst_label')

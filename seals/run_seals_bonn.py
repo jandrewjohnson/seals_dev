@@ -7,14 +7,20 @@ import pandas as pd
 from seals import seals_generate_base_data, seals_initialize_project, seals_main, seals_process_coarse_timeseries, seals_tasks, seals_utils, seals_visualization_tasks
 
 # TODO
-# 1. make regional projections be the change not the total. 
 # 2. decide how to handle project_dir in the project repo so it uses the git-cloned inputs.
 # 3. test the setup.bat and decide if it's dumb to put it in the src (tho with git ignore listed)
 
+### ENVIRONMENT VARIABLES (nothing else should need to be edited besides here)
+base_data_dir = '../../../base_data/' # Automatically downloaded data will go here.
+project_name = 'bonn_esm_cgebox_seals' # Name of the project. Also is used to set the project dir
+project_dir = os.path.join('../../Projects', project_name) # New files will be written here
 
-def convert_cgebox_output_to_seals_regional_projections_input(p):
-    
+input_dir = os.path.join(project_dir, 'input') # By default this is just in the project dir but you can specify it elsewhere here.
+input_data_dir = 'input/bonn_input' # In the event the user just cloned the repo and that repo has an input dir, this will be copied from the repo input to the project input.
+scenario_definitions_path = os.path.join(input_dir, 'scenarios.csv') # Path to the scenario definitions file.
 
+
+def convert_cgebox_output_to_seals_regional_projections_input(p):   
     
     p.regional_projections_input_override_paths = {}
     if p.run_this:
@@ -125,53 +131,80 @@ def build_bonn_task_tree(p):
 main = ''
 if __name__ == '__main__':
 
-    ### ------- ENVIRONMENT SETTINGS -------------------------------
-    # Users should only need to edit lines in this section
-
     # Create a ProjectFlow Object to organize directories and enable parallel processing.
     p = hb.ProjectFlow()
-
-    # Assign project-level attributes to the p object (such as in p.base_data_dir = ... below)
-    # including where the project_dir and base_data are located.
-    # The project_name is used to name the project directory below. If the directory exists, each task will not recreate
-    # files that already exist.
+    
+    # Default locations (to be used if local vars not defined above)
     p.user_dir = os.path.expanduser('~')
-    p.extra_dirs = ['Files', 'seals', 'projects']
-    p.project_name = 'bonn_esm_cgebox_seals'
-    # p.project_name = p.project_name + '_' + hb.pretty_time() # If don't you want to recreate everything each time, comment out this line.
-
-    # Based on the paths above, set the project_dir. All files will be created in this directory.
-    p.project_dir = os.path.join(p.user_dir, os.sep.join(p.extra_dirs), p.project_name)
-    p.set_project_dir(p.project_dir)
+    p.extra_dirs = ['Files', 'seals', 'projects']   
+    
+    # Set processing resolution: determines how large of a chunk should be processed at a time. 4 deg is about max for 64gb memory systems
+    p.processing_resolution = 1.0 # In degrees. Must be in pyramid_compatible_resolutions
+        
+    # Check for locally-set versions of base_data_dir, project_dir, and input_dir
+    
+    # Set the base data dir. The model will check here to see if it has everything it needs to run.
+    # If anything is missing, it will download it. You can use the same base_data dir across multiple projects.
+    # Additionally, if you're clever, you can move files generated in your tasks to the right base_data_dir
+    # directory so that they are available for future projects and avoids redundant processing.
+    # The final directory has to be named base_data to match the naming convention on the google cloud bucket.
+    if 'base_data_dir' in globals():
+        hb.log(f'Using locally set base_data_dir: {base_data_dir}')
+        p.base_data_dir = base_data_dir
+    else:
+        p.base_data_dir = os.path.join(p.user_dir, 'Files/base_data')
+        
+    if 'project_name' in globals():
+        hb.log(f'Using locally set project_name: {project_name}')
+        p.project_name = project_name        
+        generate_new_project_dir_with_timestamp_for_every_run = False # If true, every run goes into a new and unique folder. This can help with debuging, but also means each run will be very slow as it will not use precalculated results.
+        if generate_new_project_dir_with_timestamp_for_every_run:
+            p.project_name = p.project_name + '_' + hb.pretty_time()      
+    
+    if 'project_dir' in globals():
+        hb.log(f'Using locally set project_dir: {project_dir}')
+        p.project_dir = project_dir        
+    else:
+        p.project_dir = os.path.join(p.user_dir, os.sep.join(p.extra_dirs), p.project_name)
+    p.set_project_dir(p.project_dir)       
+        
+    if 'input_dir' in globals():
+        hb.log(f'Using locally set input_dir: {input_dir}')
+        p.input_dir = input_dir
+        
+    else:
+        p.input_dir = os.path.join(p.project_dir, 'input')
+        
+    if 'input_data_dir' in globals():
+        hb.log(f'Detected locally set input_data_dir: {input_data_dir}. This happens when the data used for project setup (not the raw spatial data) is obtianed by git cloning. The assumed behavior here is that it will copy it from the repo input dir to the project input dir.')
+        p.input_data_dir = input_data_dir
+        # Copy the input data dir to the project input dir if it exists and the project input dir doesn't exist.
+        if hb.path_exists(p.input_data_dir, verbose=True):
+            hb.copy_file_tree_to_new_root(p.input_data_dir, p.input_dir, skip_existing=True)
+            hb.log(f'Copied input data from {p.input_data_dir} to {p.input_dir}.')
+    
+    ## Set defaults and generate the scenario_definitions.csv if it doesn't exist.
+    # SEALS will run based on the scenarios defined in a scenario_definitions.csv
+    # If you have not run SEALS before, SEALS will generate it in your project's input_dir.
+    # A useful way to get started is to to run SEALS on the test data without modification
+    # and then edit the scenario_definitions.csv to your project needs.       
+    if 'scenario_definitions_path' in globals():
+        hb.log(f'Using locally set scenarios_file_path: {scenario_definitions_path}')
+        p.scenario_definitions_path = scenario_definitions_path
+    else:
+        p.scenario_definitions_path = os.path.join(p.input_dir, 'scenarios.csv')      
 
     p.run_in_parallel = 1 # Must be set before building the task tree if the task tree has parralel iterator tasks.
 
     # Build the task tree via a building function and assign it to p. IF YOU WANT TO LOOK AT THE MODEL LOGIC, INSPECT THIS FUNCTION
     build_bonn_task_tree(p)
 
-    # Set the base data dir. The model will check here to see if it has everything it needs to run.
-    # If anything is missing, it will download it. You can use the same base_data dir across multiple projects.
-    # Additionally, if you're clever, you can move files generated in your tasks to the right base_data_dir
-    # directory so that they are available for future projects and avoids redundant processing.
-    # The final directory has to be named base_data to match the naming convention on the google cloud bucket.
-    p.base_data_dir = os.path.join(p.user_dir, 'Files/base_data')
-
     # ProjectFlow downloads all files automatically via the p.get_path() function. If you want it to download from a different
     # bucket than default, provide the name and credentials here. Otherwise uses default public data 'gtap_invest_seals_2023_04_21'.
     p.data_credentials_path = None
     p.input_bucket_name = None
 
-    ## Set defaults and generate the scenario_definitions.csv if it doesn't exist.
-    # SEALS will run based on the scenarios defined in a scenario_definitions.csv
-    # If you have not run SEALS before, SEALS will generate it in your project's input_dir.
-    # A useful way to get started is to to run SEALS on the test data without modification
-    # and then edit the scenario_definitions.csv to your project needs.   
-    p.scenario_definitions_filename = 'standard_scenarios.csv' 
-    p.scenario_definitions_path = os.path.join(p.input_dir, p.scenario_definitions_filename)
-    seals_initialize_project.initialize_scenario_definitions(p)
-        
-    # Set processing resolution: determines how large of a chunk should be processed at a time. 4 deg is about max for 64gb memory systems
-    p.processing_resolution = 1.0 # In degrees. Must be in pyramid_compatible_resolutions
+    seals_initialize_project.initialize_scenario_definitions(p)       
 
     seals_initialize_project.set_advanced_options(p)
 

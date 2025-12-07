@@ -82,12 +82,16 @@ def set_advanced_options(p):
 
 
 def initialize_scenario_definitions(p):
-
+    # TODOO NOTE: This has some dumb legacy code that needs to get fixed where it doesn't just TRUST that the get_path function works.
     # If the scenarios csv doesn't exist, generate it and put it in the input_dir
     if not hb.path_exists(p.scenario_definitions_path):
+        
+        # Check if p has attribute
+        if not hasattr(p, 'scenario_definitions_filename'):
+            p.scenario_definitions_filename = 'scenarios.csv'
 
         # Before generating a new scenarios file, check if there's not one in the base data with the matching name.
-        possible_path = p.get_path('seals', 'default_inputs', p.scenario_definitions_filename)
+        possible_path = p.get_path('seals', 'default_inputs', p.scenario_definitions_filename, raise_error_if_fail=False)
         if hb.path_exists(possible_path):
             hb.path_copy(possible_path, p.scenario_definitions_path)
 
@@ -213,7 +217,7 @@ def build_standard_task_tree(p):
     ##### VIZUALIZE EXISTING DATA #####
     p.visualization_task = p.add_task(seals_visualization_tasks.visualization)
     p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
-    p.html_report_task = p.add_task(seals_visualization_tasks.html_report, parent=p.visualization_task)
+    # p.html_report_task = p.add_task(seals_visualization_tasks.html_report, parent=p.visualization_task)
 
     
 def build_ken_task_tree(p):
