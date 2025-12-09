@@ -153,7 +153,7 @@ def regional_change(p):
                                     covariate_sum_shift_path = hb.suri(output_path_template, 'covariate_sum_shift')
                                     input = ((regional_coarsified_path, 1), (current_luc_coarse_projections_path, 1), (target_raster_path, 1))
                                     
-                                    print('WARNING! sometimes need to use *1000 here to convert from ha to m2. Check if this is desired behavior. GTAP NEEDS THIS OTHERS DONT')
+                                    # print('WARNING! sometimes need to use *1000 here to convert from ha to m2. Check if this is desired behavior. GTAP NEEDS THIS OTHERS DONT')
                                     def op(a, b, c):
                                         return (a - (c-b)) 
                                         # return (a - (c-b)) * 1000
