@@ -35,11 +35,22 @@ def project_aoi(p):
             if not p.regions_column_label in gdf.columns:
                 raise ValueError(f"The column '{p.regions_column_label}' is not found in the regions vector file: {p.regions_vector_path}. Please check the column name or the vector file.")
 
-            p.aoi_path = os.path.join(p.cur_dir, 'aoi_' + str(p.aoi) + '.gpkg')
-            p.aoi_label = p.aoi            
-        
-            filter_column = p.regions_column_label # if it's exactly 3 characters, assume it's an ISO3 code.
-            filter_value = p.aoi
+
+            if p.aoi == 'from_regional_projections_input_path':
+                # Read the csv to get the unique AOI values
+                df = hb.df_read(p.regional_projections_input_path)
+                unique_aois = list(df[p.regions_column_label].unique())
+                filter_column = p.regions_column_label
+                filter_value = unique_aois
+                p.aoi_path = os.path.join(p.cur_dir, 'aoi_' + str(p.aoi) + '.gpkg')
+                p.aoi_label = p.aoi     
+            else:
+                
+                p.aoi_path = os.path.join(p.cur_dir, 'aoi_' + str(p.aoi) + '.gpkg')
+                p.aoi_label = p.aoi            
+            
+                filter_column = p.regions_column_label # if it's exactly 3 characters, assume it's an ISO3 code.
+                filter_value = p.aoi
                
             
             for current_aoi_path in hb.list_filtered_paths_nonrecursively(p.cur_dir, include_strings='aoi'):

@@ -1769,7 +1769,10 @@ def allocation_zones(p):
                             f.write(str(k) + ',' + str(line[0]) + '_' + str(line[1]) + '\n')
 
         # Load the calibration variable used for all the zones if relying ona  precalcualted one.
-        if hb.path_exists(os.path.join(p.input_dir, p.calibration_parameters_source)):
+        # TODO I never fixed the case where the data is just in the default base data and was resolved by get_path() the desired way. Could probably delete the code below cause the p.get_path found by the scenarios iteration should be sufficient.
+        if hb.path_exists(p.calibration_parameters_source):
+            calibration_parameters_path = p.calibration_parameters_source
+        elif hb.path_exists(os.path.join(p.input_dir, p.calibration_parameters_source)):
             calibration_parameters_path = os.path.join(p.input_dir, p.calibration_parameters_source)
         elif hb.path_exists(os.path.join(p.base_data_dir, p.calibration_parameters_source)):
             calibration_parameters_path = os.path.join(p.base_data_dir, p.calibration_parameters_source)
