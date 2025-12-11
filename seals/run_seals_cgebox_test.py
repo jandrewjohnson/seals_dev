@@ -1,5 +1,6 @@
 import os
 import sys
+import hazelbean
 
 import hazelbean as hb
 import pandas as pd
