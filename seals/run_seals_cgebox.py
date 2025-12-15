@@ -149,10 +149,9 @@ if __name__ == '__main__':
         p.base_data_dir = base_data_dir
     else:
         p.base_data_dir = os.path.join(p.user_dir, 'Files/base_data')
-    p.set_base_data_dir(p.base_data_dir)
-        
     # Actually set the base date, which will also validate that this folder is correct and not a duplicate.
-    
+    p.set_base_data_dir(p.base_data_dir)
+   
         
     if 'project_name' in globals():
         hb.log(f'Using locally set project_name: {project_name}')

@@ -1,6 +1,4 @@
-import os
-import sys
-import hazelbean
+import os, sys, time
 
 import hazelbean as hb
 import pandas as pd
@@ -8,13 +6,12 @@ import pandas as pd
 from seals import seals_generate_base_data, seals_initialize_project, seals_main, seals_process_coarse_timeseries, seals_tasks, seals_utils, seals_visualization_tasks
 
 ### ENVIRONMENT VARIABLES (nothing else should need to be edited besides here)
-base_data_dir = '../base_data' # Automatically downloaded data will go here.
 project_name = 'seals_cgebox_project' # Name of the project. Also is used to set the project dir
-project_dir = os.path.join('..') # New files will be written here
 
+project_dir = os.path.join('../projects', project_name) # New files will be written here
 input_dir = os.path.join(project_dir, 'input') # By default this is just in the project dir but you can specify it elsewhere here.
+scenario_definitions_path = os.path.join(input_dir, 'seals_cgebox_scenarios_test.csv') # Path to the scenario definitions file.
 input_data_dir = 'input/seals_cgebox_input' # In the event the user just cloned the repo and that repo has an input dir, this will be copied from the repo input to the project input.
-scenario_definitions_path = os.path.join(input_dir, 'test_scenarios.csv') # Path to the scenario definitions file.
 
 
 def convert_cgebox_output_to_seals_regional_projections_input(p):   
@@ -123,8 +120,6 @@ def build_bonn_task_tree(p):
     p.lulc_pngs_task = p.add_task(seals_visualization_tasks.lulc_pngs, parent=p.visualization_task)
 
 
-
-
 main = ''
 if __name__ == '__main__':
 
@@ -137,19 +132,6 @@ if __name__ == '__main__':
     
     # Set processing resolution: determines how large of a chunk should be processed at a time. 4 deg is about max for 64gb memory systems
     p.processing_resolution = 1.0 # In degrees. Must be in pyramid_compatible_resolutions
-        
-    # Check for locally-set versions of base_data_dir, project_dir, and input_dir
-    
-    # Set the base data dir. The model will check here to see if it has everything it needs to run.
-    # If anything is missing, it will download it. You can use the same base_data dir across multiple projects.
-    # Additionally, if you're clever, you can move files generated in your tasks to the right base_data_dir
-    # directory so that they are available for future projects and avoids redundant processing.
-    # The final directory has to be named base_data to match the naming convention on the google cloud bucket.
-    if 'base_data_dir' in globals():
-        hb.log(f'Using locally set base_data_dir: {base_data_dir}')
-        p.base_data_dir = base_data_dir
-    else:
-        p.base_data_dir = os.path.join(p.user_dir, 'Files/base_data')
         
     if 'project_name' in globals():
         hb.log(f'Using locally set project_name: {project_name}')
@@ -166,12 +148,13 @@ if __name__ == '__main__':
     p.set_project_dir(p.project_dir)       
         
     if 'input_dir' in globals():
-        hb.log(f'Using locally set input_dir: {input_dir}')
-        p.input_dir = input_dir
-        
-    else:
-        p.input_dir = os.path.join(p.project_dir, 'input')
-        
+        hb.log(f'Using locally set input_dir: {input_dir}, But first we need to check that its different than the one implied by the project_dir')
+        if p.input_dir != input_dir:
+            hb.log(f'Overriding project input_dir {p.input_dir} with locally set input_dir: {input_dir}')            
+            p.input_dir = input_dir
+        else:
+            pass # Just keep the one implied by the project_dir
+
     if 'input_data_dir' in globals():
         hb.log(f'Detected locally set input_data_dir: {input_data_dir}. This happens when the data used for project setup (not the raw spatial data) is obtianed by git cloning. The assumed behavior here is that it will copy it from the repo input dir to the project input dir.')
         p.input_data_dir = input_data_dir
@@ -179,6 +162,21 @@ if __name__ == '__main__':
         if hb.path_exists(p.input_data_dir, verbose=True):
             hb.copy_file_tree_to_new_root(p.input_data_dir, p.input_dir, skip_existing=True)
             hb.log(f'Copied input data from {p.input_data_dir} to {p.input_dir}.')
+    
+    # Check for locally-set versions of base_data_dir, project_dir, and input_dir
+    
+    # Set the base data dir. The model will check here to see if it has everything it needs to run.
+    # If anything is missing, it will download it. You can use the same base_data dir across multiple projects.
+    # Additionally, if you're clever, you can move files generated in your tasks to the right base_data_dir
+    # directory so that they are available for future projects and avoids redundant processing.
+    # The final directory has to be named base_data to match the naming convention on the google cloud bucket.
+    # if 'base_data_dir' in globals():
+    #     hb.log(f'Using locally set base_data_dir: {base_data_dir}')
+    #     p.base_data_dir = base_data_dir
+    # else:
+    #     p.base_data_dir = os.path.join(p.user_dir, 'Files/base_data')
+    # # Actually set the base date, which will also validate that this folder is correct and not a duplicate.
+    p.set_base_data_dir()    
     
     ## Set defaults and generate the scenario_definitions.csv if it doesn't exist.
     # SEALS will run based on the scenarios defined in a scenario_definitions.csv
@@ -200,6 +198,8 @@ if __name__ == '__main__':
     # bucket than default, provide the name and credentials here. Otherwise uses default public data 'gtap_invest_seals_2023_04_21'.
     p.data_credentials_path = None
     p.input_bucket_name = None
+
+    # START HERE: I haven't updated the new project location in the PROJECT template. Copy this file over to the project.
 
     seals_initialize_project.initialize_scenario_definitions(p)       
 
