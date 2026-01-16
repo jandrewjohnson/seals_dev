@@ -54,14 +54,3 @@ pip install hazelbean seals
    This creates in `my_project/`:
    - `input/` - copied from `my_project_dev/input/my_project_input/`
    - `intermediate/` - SEALS outputs and results
-
----
-
-## Developer notes
-
-To manually (without using github actions) push a new release to Pypi, run the following command:
-
-```bash
-python -m build
-python -m twine upload dist/*
-```
