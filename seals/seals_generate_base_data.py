@@ -230,7 +230,7 @@ def lulc_simplifications(p):
 
                             rules = p.lulc_correspondence_dict['src_to_dst_reclassification_dict']
                             output_path = p.aoi_lulc_simplified_paths[year]
-                            hb.reclassify_raster_hb(p.lulc_src_paths[year], rules, output_path=output_path, output_data_type=1, array_threshold=10000, match_path=p.lulc_src_paths[year], verbose=False)
+                            hb.reclassify_raster_hb(p.lulc_src_paths[year], rules, output_raster_path=output_path, output_data_type=1, array_threshold=10000, match_path=p.lulc_src_paths[year], verbose=False)
 
 
 

@@ -1566,17 +1566,20 @@ def allocation_zones(p):
         b = p.regional_projections_input_path
         c = p.projected_coarse_change_dir
         p.projected_coarse_change_dir = projected_coarse_change_dir
-
+        hb.log(f'\n\nChecking if can use a precached block list for counterfactual_label:\n {p.combined_block_lists_paths}')
         try:
-            if all(hb.path_exists(i) for i in p.combined_block_lists_paths):
+            if all(hb.path_exists(i) for i in p.combined_block_lists_paths.values()):
                 blocks_lists_already_exist = True
+                hb.log(f'    Found all required so using them. Note that this can make for strange behavior if you changed the AOI but then used precached blocklists.')
             else:
                 blocks_lists_already_exist = False
+                hb.log(f'    Did not find all required block lists so will recalculate them.')
         except:
+            hb.log(f'    Error checking for existing block lists, so will recalculate them.')
             blocks_lists_already_exist = False
 
 
-        disable_precached_block_lists = True # This is surprisingly hard to chagne for speedups because ie if you do disable, it will then niavely run on ocean blocks.
+        disable_precached_block_lists = False # This is surprisingly hard to chagne for speedups because ie if you do disable, it will then niavely run on ocean blocks.
         
         if blocks_lists_already_exist and not disable_precached_block_lists:
             hb.log('Using precached block lists. This is much faster than recalculating them, BUT, if you change the AOI, processing resolution, or any of the block list parameters, you will need to delete the existing block lists files in order to recalculate them.')
@@ -1655,9 +1658,13 @@ def allocation_zones(p):
             global_coarse_blocks_list = []
             global_processing_blocks_list = []
 
-            L.debug('Checking existing blocks for change in the LUH data and excluding if no change.')
+            hb.log('Checking existing blocks for change in the LUH data and excluding if no change. TODO: Update this for other nonLUH approaches. Also this is really slow. Optimize it.')
             for c, block in enumerate(old_coarse_blocks_list):
                 progress_percent = float(c) / float(len(old_coarse_blocks_list)) * 100.0
+                
+                # Log on a single line (don't create new lines) the percentage.
+                if c % 100 == 0:
+                    hb.log('    Checking block ' + str(c) + ' of ' + str(len(old_coarse_blocks_list)) + ' (' + str(round(progress_percent, 2)) + '%)', same_line_as_previous=True)
                 skip = []
 
                 current_coarse_change_rasters = []
@@ -1697,6 +1704,17 @@ def allocation_zones(p):
                     global_fine_blocks_list.append(old_global_fine_blocks_list[c])
                     global_coarse_blocks_list.append(old_global_coarse_blocks_list[c])
                     global_processing_blocks_list.append(old_global_processing_blocks_list[c])
+                    
+                combined_block_lists_dict = {
+                    'fine_blocks_list': fine_blocks_list,
+                    'coarse_blocks_list': coarse_blocks_list,
+                    'processing_blocks_list': processing_blocks_list,
+                    'global_fine_blocks_list': global_fine_blocks_list,
+                    'global_coarse_blocks_list': global_coarse_blocks_list,
+                    'global_processing_blocks_list': global_processing_blocks_list,
+                }
+   
+                    
 
             # WORKS but disabled for troubleshooting
             # Write the blockslists to csvs to avoid future reprocessing (actually is quite slow (2 mins) when 64000 tiles).
@@ -2132,6 +2150,8 @@ def allocation(passed_p=None):
                 # 2. Data that needs t be put in base_data_dir
                 # I confused....
                 possible_dirs = [p.intermediate_dir, p.fine_processed_inputs_dir, p.input_dir, p.base_data_dir]
+                
+                
                 path = p.get_path(path, possible_dirs=possible_dirs)
                 current_bb = hb.get_bounding_box(path)
 
