@@ -50,12 +50,12 @@ if __name__ == '__main__':
     # If you have not run SEALS before, SEALS will generate it in your project's input_dir.
     # A useful way to get started is to to run SEALS on the test data without modification
     # and then edit the scenario_definitions.csv to your project needs.   
-    p.scenario_definitions_filename = 'all_ssps_scenarios.csv' 
+    p.scenario_definitions_filename = 'global_scenarios.csv' 
     p.scenario_definitions_path = os.path.join(p.input_dir, p.scenario_definitions_filename)
     seals_initialize_project.initialize_scenario_definitions(p)
         
     # Set processing resolution: determines how large of a chunk should be processed at a time. 4 deg is about max for 64gb memory systems
-    p.processing_resolution = 4.0 # In degrees. Must be in pyramid_compatible_resolutions
+    p.processing_resolution = 1.0 # In degrees. Must be in pyramid_compatible_resolutions
 
     seals_initialize_project.set_advanced_options(p)
 
