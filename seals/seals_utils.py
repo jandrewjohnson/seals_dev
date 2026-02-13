@@ -715,7 +715,14 @@ def set_derived_attributes(p):
     p.fine_resolution = hb.get_cell_size_from_path(p.base_year_lulc_path)
     p.fine_resolution_arcseconds = hb.pyramid_compatible_resolution_to_arcseconds[p.fine_resolution]
     
-    if hb.path_exists(p.coarse_projections_input_path):
+    # Check for explicit coarse resolution from scenarios.csv column.
+    # Regional (non-global) NetCDFs need this because auto-detection assumes
+    # global extent (180/num_lat_cells) and computes wrong values.
+    explicit_coarse_resolution = getattr(p, 'coarse_resolution_arcseconds', None)
+    if explicit_coarse_resolution is not None:
+        p.coarse_resolution_arcseconds = float(explicit_coarse_resolution)
+        p.coarse_resolution = hb.pyramid_compatible_resolutions[p.coarse_resolution_arcseconds]
+    elif hb.path_exists(p.coarse_projections_input_path):
         p.coarse_resolution = hb.get_cell_size_from_path(p.coarse_projections_input_path)
         p.coarse_resolution_arcseconds = hb.pyramid_compatible_resolution_to_arcseconds[p.coarse_resolution]
     else:
