@@ -982,7 +982,17 @@ classification to the the destination classification, potentially aggregating cl
                                     # src_class_label = p.coarse_correspondence_dict['src_labels'][c]
                                     src_dir = os.path.join(p.coarse_extraction_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, 'time_' + str(year))
 
+                                    # START HERE: my p.model_label fails here bcause i have one model labve for the cge model which means it doesn't reference the correct one elsewhere.
+
+
                                     src_path = os.path.join(src_dir, src_class_label + '.tif')
+                                    
+                                    if not hb.path_exists(src_path):
+                                        hb.log('Source path does not exist: ' + str(src_path, ' trying hack'))
+                                        src_class_label = p.coarse_correspondence_dict['src_ids_to_labels'][i]
+                                        # src_class_label = p.coarse_correspondence_dict['src_labels'][c]
+                                        src_dir = os.path.join(p.coarse_extraction_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, 'time_' + str(year))
+                                    
                                     ndv = hb.get_ndv_from_path(src_path)
                                     coarse_shape = hb.get_shape_from_dataset_path(src_path)
                                     if output_array is None:
