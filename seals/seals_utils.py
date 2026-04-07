@@ -1544,18 +1544,38 @@ def convert_regional_change_to_coarse(regional_change_vector_path, regional_chan
     ### Define the allocation of the total to individual cells
     
     # Creates a dict for each zone_id: to_allocate, which will be reclassified onto the zone ids.
+    # NOTE: This function is called once per year by regional_change(), with output_dir and
+    # output_filename_end already set for that specific year. The year loop here is kept for
+    # backward compatibility but we filter the merged data to the correct year when possible.
+    # The caller passes `years` (all scenario years) — we use `output_filename_end` to infer
+    # which year the caller wants.
+
+    # Extract the target year from output_filename_end (format: _YYYY_PREVYYYY_ha_diff_...)
+    import re as _re
+    _year_match = _re.match(r'_(\d{4})_', output_filename_end)
+    _target_year = int(_year_match.group(1)) if _year_match else None
+
     for year_c, year in enumerate(years):
         allocate_per_zone_dict = {}
+
+        # Filter to target year if the CSV has a 'year' column (multi-year regional projections).
+        # Without this filter, the inner loop overwrites allocate_per_zone_dict for each year's row,
+        # and only the last year's values survive.
+        if 'year' in merged.columns and _target_year is not None:
+            merged_this_year = merged[merged['year'] == _target_year]
+        else:
+            merged_this_year = merged
+
         for column in columns_to_process:
             output_path = os.path.join(output_dir, column + output_filename_end)
-            
+
             if not hb.path_exists(output_path):
                 hb.log('Processing ' + column + ' for ' + scenario_label + ',  writing to ' + output_path)
                 regions_column_id = regions_column_id.replace('label', 'id')
-                
 
-                for i, change in merged[column].items():
-                    zone_id = int(merged[regions_column_id][i])
+
+                for i, change in merged_this_year[column].items():
+                    zone_id = int(merged_this_year[regions_column_id][i])
                     
                     if int(zone_id) in n_cells_per_zone:
                         n_cells = n_cells_per_zone[int(zone_id)] # BAD HACK, should be generalized to know ahead of time if it's an int or string

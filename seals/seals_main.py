@@ -1522,8 +1522,9 @@ def allocation_zones(p):
         'global_processing_blocks_list': os.path.join(p.cur_dir, 'global_processing_blocks_list.csv'),
     }
     
+    hb.log(f'DEBUG allocations ENTRY: run_this={p.run_this}, has_regional={hasattr(p, "regional_projections_input_path")}, regional_path={getattr(p, "regional_projections_input_path", "NOT SET")}')
     if p.run_this:
-    
+
         if hasattr(p, 'regional_projections_input_path'):
             
             if p.regional_projections_input_path:
@@ -1566,6 +1567,7 @@ def allocation_zones(p):
         b = p.regional_projections_input_path
         c = p.projected_coarse_change_dir
         p.projected_coarse_change_dir = projected_coarse_change_dir
+        hb.log(f'DEBUG allocations: projected_coarse_change_dir = {projected_coarse_change_dir}')
         hb.log(f'\n\nChecking if can use a precached block list for counterfactual_label:\n {p.combined_block_lists_paths}')
         try:
             if all(hb.path_exists(i) for i in p.combined_block_lists_paths.values()):
