@@ -43,6 +43,13 @@ def regional_change(p):
                         replace_dict = {'<^year^>': str(p.years[0])}
                         regional_change_classes_path1 = hb.replace_in_string_via_dict(p.regional_projections_input_path, replace_dict)
                         
+                        
+                        # HACK Parse the case where it's a gtapinvest task
+                        if p.regional_projections_input_path.endswith('gtap_econ_run_luc_vector'):
+                            # regional_change_classes_path1 = os.path.join(p.cur_dir, 'gtapinvest', os.path.basename(regional_change_classes_path1))
+                            regional_change_classes_path1 = os.path.join(p.regional_projections_input_path, 'lcoveraez_' + p.scenario_label + '.csv')
+                            pass
+                        
                         if hb.path_exists(regional_change_classes_path1):
                             regional_change_classes_path = regional_change_classes_path1
                         else:
@@ -982,7 +989,20 @@ classification to the the destination classification, potentially aggregating cl
                                     # src_class_label = p.coarse_correspondence_dict['src_labels'][c]
                                     src_dir = os.path.join(p.coarse_extraction_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, 'time_' + str(year))
 
+                                    # START HERE: my p.model_label fails here bcause i have one model labve for the cge model which means it doesn't reference the correct one elsewhere.
+
+                                    if p.model_label == 'gtapv7-aez-rd':
+                                        p.model_label = 'gtapv7-aez-rd' # HACK, should have made this cleaner
+                                        # p.model_label = 'gtapv7-aez-rd-2023' # HACK, should have made this cleaner
+                                        
                                     src_path = os.path.join(src_dir, src_class_label + '.tif')
+                                    
+                                    if not hb.path_exists(src_path):
+                                        hb.log('Source path does not exist: ' + str(src_path), ' trying hack')
+                                        src_class_label = p.coarse_correspondence_dict['src_ids_to_labels'][i]
+                                        # src_class_label = p.coarse_correspondence_dict['src_labels'][c]
+                                        src_dir = os.path.join(p.coarse_extraction_dir, p.exogenous_label, p.climate_label, p.model_label, p.counterfactual_label, 'time_' + str(year))
+                                    
                                     ndv = hb.get_ndv_from_path(src_path)
                                     coarse_shape = hb.get_shape_from_dataset_path(src_path)
                                     if output_array is None:

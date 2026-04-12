@@ -697,6 +697,18 @@ def assign_df_row_to_object_attributes(input_object, input_row):
                     attribute_value = None
 
             setattr(input_object, attribute_name, attribute_value)
+        elif has_cat_ears:
+            if hb.has_cat_ears(attribute_value):
+                # cat_ears_present = hb.parse_to_ce_list(attribute_value)
+                # cat_ears_replace_dict = {}
+                # for cat_ear in cat_ears_present:
+
+                attribute_value = hb.replace_cat_ears_with_object_attributes(attribute_value, input_object)
+                # attribute_value = hb.replace_cat_ears_with_object_attributes_new(attribute_value, input_object)
+                setattr(input_object, attribute_name, attribute_value)
+
+            
+            
         else:
             if str(attribute_value).lower() == 'nan':
                 attribute_value = None

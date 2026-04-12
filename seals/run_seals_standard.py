@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     # Set the base data dir. The model will check here to see if it has everything it needs to run.
     # If anything is missing, it will download it. You can use the same base_data dir across multiple projects.
-    # Additionally, if you're clever, you can move files generated in your tasks to the right base_data_dir
+    # Additionally, if you're clever, you can move files generated in your taskquits to the right base_data_dir
     # directory so that they are available for future projects and avoids redundant processing.
     # The final directory has to be named base_data to match the naming convention on the google cloud bucket.
     p.base_data_dir = os.path.join(p.user_dir, 'Files/base_data')
