@@ -721,6 +721,17 @@ def assign_df_row_to_object_attributes(input_object, input_row):
     model_spec['regional_projections_input_path'] = ''
     assign_defaults_from_model_spec(input_object, model_spec)
 
+    # If seals_years is set and this is a non-baseline scenario, override p.years with p.seals_years.
+    # This lets SEALS iterate over a coarser year grid (e.g. MAgPIE's 5-year timesteps) while GTAP
+    # tasks keep using annual p.years (GTAP uses gtappy_utils.assign_df_row_to_object_attributes,
+    # not this SEALS version, so GTAP tasks are unaffected by this override).
+    seals_years = getattr(input_object, 'seals_years', None)
+    scenario_type = getattr(input_object, 'scenario_type', None)
+    if (isinstance(seals_years, list) and len(seals_years) > 0
+            and all(isinstance(y, int) for y in seals_years)
+            and scenario_type is not None and str(scenario_type) != 'baseline'):
+        input_object.years = seals_years
+
 def set_derived_attributes(p):
 
     # Resolutions come from the fine and coarse maps
