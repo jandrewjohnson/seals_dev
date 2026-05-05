@@ -60,8 +60,11 @@ def regional_change(p):
                         # This means the path has the extra cur_dir derived paths. Hack here to find the refpath and merge it with intermediate
                         replace_dict = {'<^year^>': str(p.years[0])}
                         regional_change_classes_path1 = hb.replace_in_string_via_dict(p.regional_projections_input_path, replace_dict)
-                        
-                        
+
+                        if hb.has_cat_ears(p.regional_projections_input_path):
+                            p.regional_projections_input_path = hb.replace_cat_ears_with_object_attributes(p.regional_projections_input_path, p)
+                            
+                                                    
                         # HACK Parse the case where it's a gtapinvest task
                         if p.regional_projections_input_path.endswith('gtap_econ_run_luc_vector'):
                             # regional_change_classes_path1 = os.path.join(p.cur_dir, 'gtapinvest', os.path.basename(regional_change_classes_path1))
